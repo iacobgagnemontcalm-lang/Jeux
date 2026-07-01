@@ -7,18 +7,19 @@ export function normalizeCode(raw) {
 
 // Parse a code. Returns null if invalid, or one of:
 //   { code, kind: 'fruit', fruit }
-//   { code, kind: 'special', prefix, special }
-// A valid code is LETTERS + DIGITS where LETTERS matches a known prefix.
+//   { code, kind: 'special', special }
+// Special codes are matched as exact codes (e.g. ATY3). Fruit codes are a known
+// letter prefix + digits (e.g. MAN7).
 export function parseCode(raw) {
   const code = normalizeCode(raw);
+  if (SPECIAL_CODES[code]) {
+    return { code, kind: 'special', special: SPECIAL_CODES[code] };
+  }
   const match = code.match(/^([A-Z]+)(\d+)$/);
   if (!match) return null;
-  const prefix = match[1];
-  if (PREFIX_TO_FRUIT[prefix]) {
-    return { code, kind: 'fruit', fruit: PREFIX_TO_FRUIT[prefix] };
-  }
-  if (SPECIAL_CODES[prefix]) {
-    return { code, kind: 'special', prefix, special: SPECIAL_CODES[prefix] };
+  const fruit = PREFIX_TO_FRUIT[match[1]];
+  if (fruit) {
+    return { code, kind: 'fruit', fruit };
   }
   return null;
 }
