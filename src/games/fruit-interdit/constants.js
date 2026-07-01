@@ -25,3 +25,12 @@ export const FRUIT_KEYS = Object.keys(FRUITS);
 export const PREFIX_TO_FRUIT = Object.fromEntries(
   FRUIT_KEYS.map((key) => [FRUITS[key].prefix, key]),
 );
+
+// Special (non-fruit) codes. Same PREFIX + number format (e.g. ATY1, ATY2).
+// Each awards points AND broadcasts an announcement to every player.
+export const SPECIAL_CODES = {
+  ATY: {
+    points: 1000,
+    announcement: { text: "Dernière avant d'être papa", emoji: '👶' },
+  },
+};

@@ -506,3 +506,48 @@ body {
   padding: 16px;
   font-size: 18px;
 }
+
+/* --- Announcement overlay (special-code broadcast) --- */
+.announcement-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 20, 13, 0.7);
+  padding: 24px;
+  animation: ann-fade 0.25s ease;
+}
+.announcement-card {
+  background: linear-gradient(180deg, #1c6b47, #0e3d29);
+  border: 2px solid var(--gold);
+  border-radius: 22px;
+  padding: 32px 28px;
+  text-align: center;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  animation: ann-pop 0.35s cubic-bezier(0.2, 1.2, 0.4, 1);
+}
+.announcement-card__emoji {
+  font-size: 72px;
+  line-height: 1;
+  animation: ann-bounce 1s ease-in-out infinite;
+}
+.announcement-card__text {
+  margin-top: 14px;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--gold);
+  text-shadow: 0 2px 0 var(--gold-shadow), 0 3px 8px rgba(0, 0, 0, 0.45);
+}
+@keyframes ann-fade {
+  from { opacity: 0; }
+}
+@keyframes ann-pop {
+  from { transform: scale(0.8); opacity: 0; }
+}
+@keyframes ann-bounce {
+  50% { transform: translateY(-8px); }
+}

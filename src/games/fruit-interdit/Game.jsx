@@ -1,9 +1,10 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { submitCode, endSession, toLeaderboard } from './session.js';
 import { FRUITS } from './constants.js';
 import Timer from '../../components/Timer.jsx';
 import Leaderboard from '../../components/Leaderboard.jsx';
 import FruitCounts from '../../components/FruitCounts.jsx';
+import Announcement from '../../components/Announcement.jsx';
 
 const REASON_TEXT = {
   invalid: 'Code invalide.',
@@ -21,6 +22,33 @@ export default function Game({ pin, session, playerId }) {
 
   const me = session.players?.[playerId] || { points: 0, fruitCounts: {} };
   const leaderboard = toLeaderboard(session.players);
+
+  // Watch every player's node for a broadcast announcement and show new ones.
+  const [announce, setAnnounce] = useState(null);
+  const seenAnnRef = useRef(null);
+  useEffect(() => {
+    const anns = Object.values(session.players || {})
+      .map((p) => p.announce)
+      .filter(Boolean);
+    if (seenAnnRef.current === null) {
+      // On first load, treat existing announcements as already seen (don't replay).
+      seenAnnRef.current = new Set(anns.map((a) => a.at));
+      return;
+    }
+    const fresh = anns
+      .filter((a) => !seenAnnRef.current.has(a.at))
+      .sort((x, y) => y.at - x.at);
+    if (fresh.length) {
+      fresh.forEach((a) => seenAnnRef.current.add(a.at));
+      setAnnounce(fresh[0]);
+    }
+  }, [session.players]);
+
+  useEffect(() => {
+    if (!announce) return undefined;
+    const t = setTimeout(() => setAnnounce(null), 6000);
+    return () => clearTimeout(t);
+  }, [announce]);
 
   const handleExpire = useCallback(async () => {
     if (endingRef.current) return;
@@ -41,13 +69,20 @@ export default function Game({ pin, session, playerId }) {
     try {
       const res = await submitCode(pin, playerId, value);
       if (res.ok) {
-        const fruit = FRUITS[res.fruit];
-        setFeedback({
-          type: 'ok',
-          text:
-            `${fruit.emoji} ${fruit.label} +${res.awarded}` +
-            (res.multiplier > 1 ? ` (combo ×${res.multiplier}!)` : ''),
-        });
+        if (res.kind === 'special') {
+          setFeedback({
+            type: 'ok',
+            text: `${res.announcement.emoji} +${res.awarded}`,
+          });
+        } else {
+          const fruit = FRUITS[res.fruit];
+          setFeedback({
+            type: 'ok',
+            text:
+              `${fruit.emoji} ${fruit.label} +${res.awarded}` +
+              (res.multiplier > 1 ? ` (combo ×${res.multiplier}!)` : ''),
+          });
+        }
         setCode('');
       } else {
         setFeedback({ type: 'err', text: REASON_TEXT[res.reason] || 'Erreur.' });
@@ -59,6 +94,7 @@ export default function Game({ pin, session, playerId }) {
 
   return (
     <div className="screen game">
+      <Announcement announce={announce} />
       <div className="game__topbar">
         <Timer endsAt={session.endsAt} onExpire={handleExpire} />
         <div className="game__score">

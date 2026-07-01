@@ -90,7 +90,7 @@ export async function endSession(pin) {
 export async function submitCode(pin, playerId, raw) {
   const parsed = parseCode(raw);
   if (!parsed) return { ok: false, reason: 'invalid' };
-  const { code, fruit } = parsed;
+  const { code } = parsed;
 
   const sessionSnap = await get(ref(db, `sessions/${pin}`));
   if (!sessionSnap.exists()) return { ok: false, reason: 'no-session' };
@@ -105,10 +105,32 @@ export async function submitCode(pin, playerId, raw) {
   );
   if (!claim.committed) return { ok: false, reason: 'used' };
 
-  // Award points + update combo on the player node.
+  const playerRef = ref(db, `sessions/${pin}/players/${playerId}`);
+
+  // Special code: flat points + broadcast announcement (stored on the player's
+  // own node, which every client reads — no extra security rule needed).
+  if (parsed.kind === 'special') {
+    const { points, announcement } = parsed.special;
+    await runTransaction(playerRef, (p) => {
+      if (!p) return p;
+      return {
+        ...p,
+        points: (p.points || 0) + points,
+        announce: {
+          text: announcement.text,
+          emoji: announcement.emoji,
+          at: Date.now(),
+        },
+      };
+    });
+    return { ok: true, kind: 'special', awarded: points, announcement };
+  }
+
+  // Fruit code: award points (with combo multiplier) + tally, on the player node.
+  const { fruit } = parsed;
   let awarded = 0;
   let multiplier = 1;
-  await runTransaction(ref(db, `sessions/${pin}/players/${playerId}`), (p) => {
+  await runTransaction(playerRef, (p) => {
     if (!p) return p;
     const streak = p.lastFruit === fruit ? (p.comboStreak || 1) + 1 : 1;
     multiplier = Math.min(streak, MAX_COMBO);
@@ -124,7 +146,7 @@ export async function submitCode(pin, playerId, raw) {
     };
   });
 
-  return { ok: true, fruit, awarded, multiplier };
+  return { ok: true, kind: 'fruit', fruit, awarded, multiplier };
 }
 
 // --- Live subscription hook ---
