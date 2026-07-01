@@ -1,0 +1,13 @@
+# Netlify configuration. With this file, Netlify needs no manual setup — it reads
+# the build command, the folder to publish, and the single-page-app redirect here.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# The app uses client-side routing (React Router). This redirect makes every URL
+# serve index.html so deep links / refreshes don't 404.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

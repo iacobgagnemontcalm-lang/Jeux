@@ -73,8 +73,34 @@ You need a Firebase project (free "Spark" plan is enough).
 
 ## Deploy to a public URL
 
-This puts the app on the internet at a link you can text to your friends. You only
-do the "once" steps a single time; after that, deploying is one command.
+The app is a static site that talks to Firebase for data + auth, so you can host it
+anywhere. Two options:
+
+### Option A — Netlify (easiest, no terminal, auto-deploys)
+
+The repo includes `netlify.toml`, so Netlify configures itself.
+
+1. Go to <https://app.netlify.com> and sign up / log in **with GitHub**.
+2. **Add new site → Import an existing project → GitHub**, authorize, and pick this
+   repository.
+3. If asked for a branch, choose the branch that has the code. Build command and
+   publish folder come from `netlify.toml` (`npm run build` → `dist`) — leave them.
+4. **Deploy**. After a minute you get a public URL like
+   `https://your-site-name.netlify.app`. Every future push auto-deploys.
+
+The Firebase web config is committed in `.env.production`, so Netlify's build already
+has it — no environment variables to set.
+
+> If anonymous sign-in fails on the Netlify domain, add your `*.netlify.app` domain in
+> Firebase → **Authentication → Settings → Authorized domains**.
+
+Render works the same way (New → Static Site, build `npm run build`, publish `dist`,
+add a rewrite `/*` → `/index.html`).
+
+### Option B — Firebase Hosting (via terminal)
+
+This puts the app on `https://jeux-a5490.web.app`. You only do the "once" steps a
+single time; after that, deploying is one command.
 
 **Step 1 — install the Firebase command-line tool (once).** In a terminal:
 
