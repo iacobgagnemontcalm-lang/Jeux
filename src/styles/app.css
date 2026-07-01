@@ -1,14 +1,19 @@
 :root {
-  --bg: #0a1a4f;
-  --bg-2: #0d2270;
-  --panel: rgba(255, 255, 255, 0.06);
-  --panel-border: rgba(255, 255, 255, 0.14);
-  --text: #f4f6ff;
-  --muted: #a9b4e0;
-  --primary: #ffcf33;
-  --primary-ink: #2a2100;
-  --ok: #46d17a;
-  --err: #ff6b6b;
+  /* Fruits Forest theme: deep jungle green + warm gold */
+  --bg: #072019;
+  --bg-2: #16543a;
+  --panel: rgba(4, 26, 17, 0.5);
+  --panel-border: rgba(160, 224, 150, 0.22);
+  --text: #f4f7ea;
+  --muted: #a9c9a6;
+  --primary: #ffcb37;
+  --primary-ink: #33240a;
+  --gold: #ffd24a;
+  --gold-shadow: #a86a15;
+  --gold-shadow-2: #6e4210;
+  --leaf: #4cc35d;
+  --ok: #57d36a;
+  --err: #ff7a6b;
   --font: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
 }
 
@@ -25,7 +30,12 @@ body {
 body {
   font-family: var(--font);
   color: var(--text);
-  background: radial-gradient(circle at 50% -10%, var(--bg-2), var(--bg) 60%);
+  background:
+    radial-gradient(circle at 50% -5%, var(--bg-2), transparent 55%),
+    radial-gradient(circle at 100% 100%, rgba(76, 195, 93, 0.18), transparent 45%),
+    radial-gradient(circle at 0% 90%, rgba(76, 195, 93, 0.12), transparent 40%),
+    linear-gradient(180deg, #0c3325 0%, var(--bg) 70%, #04140e 100%);
+  background-attachment: fixed;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
@@ -152,10 +162,14 @@ body {
   margin: 24px 0 8px;
 }
 .hub-header h1 {
-  font-size: 44px;
+  font-size: 46px;
   letter-spacing: 6px;
   margin: 0;
-  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+  color: var(--gold);
+  text-shadow:
+    0 2px 0 var(--gold-shadow),
+    0 4px 0 var(--gold-shadow-2),
+    0 6px 12px rgba(0, 0, 0, 0.5);
 }
 .subtitle {
   color: var(--muted);
@@ -229,7 +243,11 @@ body {
 }
 .game-title h1 {
   margin: 0;
-  font-size: 30px;
+  font-size: 32px;
+  color: var(--gold);
+  text-shadow:
+    0 2px 0 var(--gold-shadow),
+    0 3px 8px rgba(0, 0, 0, 0.45);
 }
 
 /* --- Entry --- */

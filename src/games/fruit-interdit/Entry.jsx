@@ -66,7 +66,7 @@ export default function Entry() {
     <div className="screen entry">
       <Link to="/" className="back-link">← Jeux</Link>
       <header className="game-title">
-        <span className="game-title__emoji">🍅</span>
+        <span className="game-title__emoji">🍓</span>
         <h1>Fruit Interdit</h1>
       </header>
 

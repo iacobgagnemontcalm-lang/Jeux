@@ -6,8 +6,8 @@ export const GAMES = [
     name: 'Fruit Interdit',
     description: 'Trouvez les fruits cachés et entrez leur code pour marquer.',
     path: '/fruit-interdit',
-    emoji: '🍅',
-    accent: '#e23b3b',
+    emoji: '🍓',
+    accent: '#4cc35d',
     enabled: true,
   },
   // Example of a future, not-yet-available game:
