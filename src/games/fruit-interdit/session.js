@@ -29,12 +29,12 @@ export async function createSession(hostId) {
     const sessionRef = ref(db, `sessions/${pin}`);
     const snap = await get(sessionRef);
     if (snap.exists()) continue;
-    await set(sessionRef, {
+    // update() (not set()) writes each field as its own leaf path, which the
+    // security rules grant per-field; a set() on the parent node would be denied.
+    await update(sessionRef, {
       status: 'lobby',
       hostId,
       createdAt: serverTimestamp(),
-      startedAt: null,
-      endsAt: null,
     });
     return pin;
   }
