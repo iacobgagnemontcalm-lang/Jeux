@@ -65,24 +65,57 @@ You need a Firebase project (free "Spark" plan is enough).
 > The `VITE_FIREBASE_*` values are meant to be public in a web app — access is
 > controlled by the database security rules, not by hiding the config.
 
-## Deploy (optional)
+## Deploy to a public URL
+
+The project is already pinned to the Firebase project `jeux-a5490` (see
+`.firebaserc`), so deploying is:
 
 ```bash
-npm run build
 npm install -g firebase-tools   # once
-firebase login                  # once
-firebase use --add              # pick your project, once
+firebase login                  # once, opens a browser
+npm run build                   # produces dist/
 firebase deploy                 # ships hosting + database rules
 ```
 
-`firebase.json` deploys the built `dist/` to Firebase Hosting and publishes the
-Realtime Database rules from `database.rules.json`.
+When it finishes you get a public URL like `https://jeux-a5490.web.app` (and
+`https://jeux-a5490.firebaseapp.com`). Share it — players open it on their phones,
+enter the PIN + their name, and join.
 
-### Security rules
+Useful variants:
+- `firebase deploy --only hosting` — push just the app (skip rules).
+- `firebase deploy --only database` — push just `database.rules.json` (see below).
+- `firebase hosting:channel:deploy preview` — a temporary preview URL to test first.
 
-`database.rules.json` is intentionally open under `sessions/` so the demo works with
-no auth (players are anonymous, identified by a per-browser id + the name they type).
-Tighten these before any public/production use.
+`firebase.json` maps the built `dist/` to Firebase Hosting (with a SPA rewrite so
+every route serves `index.html`) and points the database rules at
+`database.rules.json`.
+
+## Security rules
+
+The Realtime Database is guarded by `database.rules.json`. What they do:
+
+- The database root is **closed** (`.read/.write: false`); only `sessions/$pin` is
+  reachable. You must know a session's PIN to read or write it — nobody can dump the
+  whole database or list every session.
+- Writes are **shape-validated**: `status` must be one of `lobby|playing|ended`,
+  names are strings ≤ 30 chars, points/counts must be numbers, etc. This blocks
+  malformed/garbage data.
+
+**Important — what they do NOT do:** because the game is anonymous (no login, players
+are just a per-browser id + a typed name), the rules can't tell one player from
+another. A determined person who opens the console could write to the database
+directly and inflate their score. That's an acceptable trade-off for a friendly,
+private party game, and it's the same posture as Firebase "test mode" but safer
+(closed root + validation, and it never expires).
+
+If you later want to make cheating hard, enable **Anonymous Authentication** in the
+Firebase console and change the rules so each player can only write their *own* node
+(e.g. `".write": "auth != null && auth.uid == $playerId"`). That's a small,
+self-contained follow-up — ask and I'll wire it up.
+
+To publish rule changes: edit `database.rules.json`, then
+`firebase deploy --only database` (or paste the file into
+**Console → Realtime Database → Rules → Publish**).
 
 ## Adding another game
 

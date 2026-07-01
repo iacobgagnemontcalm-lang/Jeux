@@ -1,20 +1,32 @@
 {
   "rules": {
+    ".read": false,
+    ".write": false,
     "sessions": {
-      ".read": true,
       "$pin": {
+        ".read": true,
         ".write": true,
-        "status": { ".validate": "newData.isString()" },
+        "status": {
+          ".validate": "newData.isString() && (newData.val() == 'lobby' || newData.val() == 'playing' || newData.val() == 'ended')"
+        },
+        "hostId": { ".validate": "newData.isString() && newData.val().length <= 64" },
+        "createdAt": { ".validate": "newData.isNumber()" },
+        "startedAt": { ".validate": "newData.isNumber() || newData.val() == null" },
+        "endsAt": { ".validate": "newData.isNumber() || newData.val() == null" },
         "players": {
           "$playerId": {
             "name": { ".validate": "newData.isString() && newData.val().length <= 30" },
-            "points": { ".validate": "newData.isNumber()" }
+            "points": { ".validate": "newData.isNumber()" },
+            "comboStreak": { ".validate": "newData.isNumber()" },
+            "lastFruit": { ".validate": "newData.isString() || newData.val() == null" },
+            "joinedAt": { ".validate": "newData.isNumber()" },
+            "fruitCounts": {
+              "$fruit": { ".validate": "newData.isNumber()" }
+            }
           }
         },
         "usedCodes": {
-          "$code": {
-            ".validate": "newData.isString()"
-          }
+          "$code": { ".validate": "newData.isString() && newData.val().length <= 64" }
         }
       }
     }
