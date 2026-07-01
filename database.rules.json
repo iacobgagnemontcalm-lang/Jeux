@@ -1,0 +1,22 @@
+{
+  "rules": {
+    "sessions": {
+      ".read": true,
+      "$pin": {
+        ".write": true,
+        "status": { ".validate": "newData.isString()" },
+        "players": {
+          "$playerId": {
+            "name": { ".validate": "newData.isString() && newData.val().length <= 30" },
+            "points": { ".validate": "newData.isNumber()" }
+          }
+        },
+        "usedCodes": {
+          "$code": {
+            ".validate": "newData.isString()"
+          }
+        }
+      }
+    }
+  }
+}
