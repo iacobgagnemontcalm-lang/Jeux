@@ -74,7 +74,7 @@ export default function Game({ pin, session, playerId }) {
           autoComplete="off"
           autoCapitalize="characters"
           value={code}
-          placeholder="Entrer un code (ex : MANG7)"
+          placeholder="Entrer un code (ex : MAN7)"
           onChange={(e) => setCode(e.target.value.toUpperCase())}
         />
         <button type="submit" className="btn btn--primary" disabled={busy}>

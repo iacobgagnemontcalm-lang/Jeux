@@ -13,9 +13,9 @@ Players find them and type the code into the app to score. Each session lasts
 **4 minutes**.
 
 - **Codes** are a letter *prefix* + a number. The prefix picks the fruit; the number
-  just makes each sticker unique. So `MANG1`, `MANG2`, … `MANG1000` are all mangoes.
+  just makes each sticker unique. So `MAN1`, `MAN2`, … `MAN1000` are all mangoes.
 - Each code can be scored **once ever per session** — there is only one physical
-  `MANG1`, so the first person to enter it claims it and it is then spent.
+  `MAN1`, so the first person to enter it claims it and it is then spent.
 - **Combo:** entering the *same fruit type back-to-back* multiplies its points
   (×2, ×3, … capped at ×5). A different fruit resets the streak.
 
@@ -24,9 +24,9 @@ Players find them and type the code into the app to score. Each session lasts
 | Fruit        | Prefix | Points |
 | ------------ | ------ | ------ |
 | Tomate       | `TOM`  | 1000   |
-| Mangue       | `MANG` | 600    |
+| Mangue       | `MAN`  | 600    |
 | Citron       | `LEM`  | 350    |
-| Citron vert  | `LIME` | 350    |
+| Citron vert  | `LIM`  | 350    |
 | Pomme        | `APP`  | 200    |
 | Myrtille     | `BLU`  | 100    |
 
