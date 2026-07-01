@@ -29,10 +29,10 @@ export const PREFIX_TO_FRUIT = Object.fromEntries(
 // Special (non-fruit) codes, matched as EXACT codes. Each awards points AND
 // broadcasts its own announcement to every player.
 export const SPECIAL_CODES = {
-  ATY1: { points: 1000, announcement: { emoji: '👶', text: "C'est un garçon ! 💙 Monsieur Couleuvre" } },
-  ATY2: { points: 1000, announcement: { emoji: '👶', text: "C'est un garçon ! 💙 Louphi" } },
+  ATY1: { points: 1000, announcement: { emoji: '👶', text: '💙 Monsieur Couleuvre' } },
+  ATY2: { points: 1000, announcement: { emoji: '👶', text: '💙 Louphi' } },
   ATY3: { points: 1000, announcement: { emoji: '🧙‍♀️', text: 'La sorcière Charlotte 🔮' } },
-  ATY4: { points: 1000, announcement: { emoji: '👶', text: "C'est une fille ! 💗 Lalali" } },
-  ATY5: { points: 1000, announcement: { emoji: '👶', text: "C'est un garçon ! 💙 bébé M.Lacombe" } },
+  ATY4: { points: 1000, announcement: { emoji: '👶', text: '💗 Lalali' } },
+  ATY5: { points: 1000, announcement: { emoji: '👶', text: '💙 bébé M.Lacombe' } },
   ATY6: { points: 1000, announcement: { emoji: '👶', text: 'Bébé Guérin 🍼' } },
 };
