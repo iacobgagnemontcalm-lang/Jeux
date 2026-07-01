@@ -30,11 +30,13 @@ export default function Game({ pin, session, playerId }) {
     const anns = Object.values(session.players || {})
       .map((p) => p.announce)
       .filter(Boolean);
-    if (seenAnnRef.current === null) {
-      // On first load, treat existing announcements as already seen (don't replay).
-      seenAnnRef.current = new Set(anns.map((a) => a.at));
-      return;
-    }
+    if (seenAnnRef.current === null) seenAnnRef.current = new Set();
+    // Ignore stale announcements (from before this device loaded), but still show
+    // one from the last ~15s even if the page just opened. Each shows only once.
+    const RECENT_MS = 15000;
+    anns.forEach((a) => {
+      if (Date.now() - a.at > RECENT_MS) seenAnnRef.current.add(a.at);
+    });
     const fresh = anns
       .filter((a) => !seenAnnRef.current.has(a.at))
       .sort((x, y) => y.at - x.at);
