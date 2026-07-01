@@ -1,16 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import {
-  getPlayerId,
-  createSession,
-  sessionExists,
-  joinSession,
-} from './session.js';
+import { usePlayer } from '../../auth.jsx';
+import { createSession, sessionExists, joinSession } from './session.js';
 
 const NAME_KEY = 'fi_player_name';
 
 export default function Entry() {
   const navigate = useNavigate();
+  const { uid } = usePlayer();
   const [name, setName] = useState(() => localStorage.getItem(NAME_KEY) || '');
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
@@ -26,9 +23,8 @@ export default function Entry() {
     setError('');
     setBusy(true);
     try {
-      const playerId = getPlayerId();
-      const newPin = await createSession(playerId);
-      const res = await joinSession(newPin, playerId, name);
+      const newPin = await createSession(uid);
+      const res = await joinSession(newPin, uid, name);
       if (!res.ok) throw new Error('Impossible de rejoindre la session créée.');
       navigate(`/fruit-interdit/${newPin}`);
     } catch (e) {
@@ -49,7 +45,7 @@ export default function Entry() {
         setError('Aucune session avec ce PIN.');
         return;
       }
-      const res = await joinSession(cleanPin, getPlayerId(), name);
+      const res = await joinSession(cleanPin, uid, name);
       if (!res.ok) {
         setError(
           res.reason === 'already-started'

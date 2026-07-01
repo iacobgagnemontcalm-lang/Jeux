@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getDatabase } from 'firebase/database';
+import { getAuth } from 'firebase/auth';
 
 // Config is read from Vite env vars (see .env.example). These values are meant to be
 // public in a Firebase web app; the Realtime Database rules are what protect the data.
@@ -20,6 +21,6 @@ export const isFirebaseConfigured = Boolean(
 
 // Only initialise when configured, so a missing .env shows the config warning
 // instead of crashing the whole app at load time.
-export const db = isFirebaseConfigured
-  ? getDatabase(initializeApp(firebaseConfig))
-  : null;
+const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
+export const db = app ? getDatabase(app) : null;
+export const auth = app ? getAuth(app) : null;

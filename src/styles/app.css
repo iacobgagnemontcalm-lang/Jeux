@@ -52,6 +52,12 @@ body {
   color: var(--muted);
 }
 
+.loading-center {
+  text-align: center;
+  margin-top: 48px;
+  font-size: 18px;
+}
+
 .error-text {
   color: var(--err);
   font-weight: 600;

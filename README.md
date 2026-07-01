@@ -48,70 +48,95 @@ You need a Firebase project (free "Spark" plan is enough).
 
 1. Create a project at <https://console.firebase.google.com>.
 2. **Build → Realtime Database → Create database** (start in *test mode*).
-3. **Project settings → Your apps → Web (`</>`)** — register an app and copy the
+3. **Build → Authentication → Get started → Sign-in method → Anonymous → Enable.**
+   Players sign in silently with an anonymous account; the security rules use it to
+   stop people from editing each other's data or stealing claimed codes.
+4. **Project settings → Your apps → Web (`</>`)** — register an app and copy the
    config values.
-4. Copy the env template and fill it in:
+5. Copy the env template and fill it in:
    ```bash
    cp .env.example .env
    # edit .env with your VITE_FIREBASE_* values
    ```
-5. Install and run:
+6. Install and run:
    ```bash
    npm install
    npm run dev
    ```
    Open the printed URL. To test multiplayer, open it in two browser windows.
 
+> If you see **"Authentification requise"** in the app, step 3 (enable Anonymous)
+> wasn't done yet — enable it, then reload.
+
 > The `VITE_FIREBASE_*` values are meant to be public in a web app — access is
 > controlled by the database security rules, not by hiding the config.
 
 ## Deploy to a public URL
 
-The project is already pinned to the Firebase project `jeux-a5490` (see
-`.firebaserc`), so deploying is:
+This puts the app on the internet at a link you can text to your friends. You only
+do the "once" steps a single time; after that, deploying is one command.
+
+**Step 1 — install the Firebase command-line tool (once).** In a terminal:
 
 ```bash
-npm install -g firebase-tools   # once
-firebase login                  # once, opens a browser
-npm run build                   # produces dist/
-firebase deploy                 # ships hosting + database rules
+npm install -g firebase-tools
 ```
 
-When it finishes you get a public URL like `https://jeux-a5490.web.app` (and
-`https://jeux-a5490.firebaseapp.com`). Share it — players open it on their phones,
-enter the PIN + their name, and join.
+If that fails with a permissions error, try `sudo npm install -g firebase-tools`.
 
-Useful variants:
-- `firebase deploy --only hosting` — push just the app (skip rules).
-- `firebase deploy --only database` — push just `database.rules.json` (see below).
-- `firebase hosting:channel:deploy preview` — a temporary preview URL to test first.
+**Step 2 — log in (once).** This opens your browser to sign in to the same Google
+account you used for the Firebase console:
 
-`firebase.json` maps the built `dist/` to Firebase Hosting (with a SPA rewrite so
-every route serves `index.html`) and points the database rules at
-`database.rules.json`.
+```bash
+firebase login
+```
+
+**Step 3 — build the app.** This compiles everything into a `dist/` folder:
+
+```bash
+npm run build
+```
+
+**Step 4 — deploy.** The project is already pointed at your Firebase project
+`jeux-a5490` (that's what `.firebaserc` is for), so you just run:
+
+```bash
+firebase deploy
+```
+
+When it finishes, the terminal prints a **Hosting URL** like
+`https://jeux-a5490.web.app`. That's your public link — open it on your phone, or
+share it so others can join a session with the PIN + their name.
+
+**To update the live site later**, repeat only steps 3 and 4 (`npm run build` then
+`firebase deploy`). Handy variants:
+- `firebase deploy --only hosting` — push just the app (skip the database rules).
+- `firebase deploy --only database` — push just the database rules.
+
+> Under the hood, `firebase.json` uploads the built `dist/` folder to Firebase
+> Hosting (with a rewrite so every page loads the app) and publishes the database
+> rules from `database.rules.json`.
 
 ## Security rules
 
-The Realtime Database is guarded by `database.rules.json`. What they do:
+The Realtime Database is guarded by `database.rules.json`, which relies on the
+Anonymous Authentication you enabled in setup. What they enforce:
 
-- The database root is **closed** (`.read/.write: false`); only `sessions/$pin` is
-  reachable. You must know a session's PIN to read or write it — nobody can dump the
-  whole database or list every session.
-- Writes are **shape-validated**: `status` must be one of `lobby|playing|ended`,
-  names are strings ≤ 30 chars, points/counts must be numbers, etc. This blocks
-  malformed/garbage data.
+- **The database root is closed.** Only `sessions/$pin` is reachable, and only to a
+  signed-in (anonymous) user. You must know a session's PIN to read or write it —
+  nobody can dump the whole database or list every session.
+- **You can only edit your own player.** `players/$playerId` is writable only by the
+  matching signed-in user, so nobody can change another player's name or points.
+- **Codes can't be stolen or re-used.** A `usedCodes` entry can only be written if it
+  doesn't already exist, so the first person to claim a code keeps it.
+- **Writes are shape-validated:** `status` must be `lobby|playing|ended`, names ≤ 30
+  chars, points/counts must be non-negative numbers, etc. Blocks malformed data.
 
-**Important — what they do NOT do:** because the game is anonymous (no login, players
-are just a per-browser id + a typed name), the rules can't tell one player from
-another. A determined person who opens the console could write to the database
-directly and inflate their score. That's an acceptable trade-off for a friendly,
-private party game, and it's the same posture as Firebase "test mode" but safer
-(closed root + validation, and it never expires).
-
-If you later want to make cheating hard, enable **Anonymous Authentication** in the
-Firebase console and change the rules so each player can only write their *own* node
-(e.g. `".write": "auth != null && auth.uid == $playerId"`). That's a small,
-self-contained follow-up — ask and I'll wire it up.
+**One honest limitation:** scoring happens on the player's device, and a player *does*
+own their own node — so a very determined person could still open the browser console
+and inflate *their own* score (they cannot touch anyone else's). Fully preventing that
+would require moving scoring to a Cloud Function (server-side), which is a bigger,
+optional upgrade. For a friendly party game, the current rules are a solid baseline.
 
 To publish rule changes: edit `database.rules.json`, then
 `firebase deploy --only database` (or paste the file into

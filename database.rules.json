@@ -4,19 +4,32 @@
     ".write": false,
     "sessions": {
       "$pin": {
-        ".read": true,
-        ".write": true,
+        ".read": "auth != null",
         "status": {
+          ".write": "auth != null",
           ".validate": "newData.isString() && (newData.val() == 'lobby' || newData.val() == 'playing' || newData.val() == 'ended')"
         },
-        "hostId": { ".validate": "newData.isString() && newData.val().length <= 64" },
-        "createdAt": { ".validate": "newData.isNumber()" },
-        "startedAt": { ".validate": "newData.isNumber() || newData.val() == null" },
-        "endsAt": { ".validate": "newData.isNumber() || newData.val() == null" },
+        "hostId": {
+          ".write": "auth != null && newData.val() == auth.uid",
+          ".validate": "newData.isString()"
+        },
+        "createdAt": {
+          ".write": "auth != null",
+          ".validate": "newData.isNumber()"
+        },
+        "startedAt": {
+          ".write": "auth != null",
+          ".validate": "newData.isNumber() || newData.val() == null"
+        },
+        "endsAt": {
+          ".write": "auth != null",
+          ".validate": "newData.isNumber() || newData.val() == null"
+        },
         "players": {
           "$playerId": {
+            ".write": "auth != null && auth.uid == $playerId",
             "name": { ".validate": "newData.isString() && newData.val().length <= 30" },
-            "points": { ".validate": "newData.isNumber()" },
+            "points": { ".validate": "newData.isNumber() && newData.val() >= 0" },
             "comboStreak": { ".validate": "newData.isNumber()" },
             "lastFruit": { ".validate": "newData.isString() || newData.val() == null" },
             "joinedAt": { ".validate": "newData.isNumber()" },
@@ -26,7 +39,10 @@
           }
         },
         "usedCodes": {
-          "$code": { ".validate": "newData.isString() && newData.val().length <= 64" }
+          "$code": {
+            ".write": "auth != null && !data.exists()",
+            ".validate": "newData.isString() && newData.val().length <= 64"
+          }
         }
       }
     }

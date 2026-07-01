@@ -12,17 +12,8 @@ import { db } from '../../firebase.js';
 import { DURATION_SEC, MAX_COMBO, FRUITS } from './constants.js';
 import { parseCode } from './codes.js';
 
-// --- Player identity (anonymous, persisted per browser) ---
-const PLAYER_ID_KEY = 'fi_player_id';
-
-export function getPlayerId() {
-  let id = localStorage.getItem(PLAYER_ID_KEY);
-  if (!id) {
-    id = 'p_' + Math.random().toString(36).slice(2, 10);
-    localStorage.setItem(PLAYER_ID_KEY, id);
-  }
-  return id;
-}
+// Player identity is the Firebase anonymous auth uid (see src/auth.jsx), passed
+// into these functions as `playerId`.
 
 // --- PIN helpers ---
 function randomPin() {

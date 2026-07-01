@@ -1,6 +1,7 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useEffect } from 'react';
-import { useSession, getPlayerId } from './session.js';
+import { usePlayer } from '../../auth.jsx';
+import { useSession } from './session.js';
 import Lobby from './Lobby.jsx';
 import Game from './Game.jsx';
 import Results from './Results.jsx';
@@ -10,7 +11,7 @@ export default function SessionView() {
   const { pin } = useParams();
   const navigate = useNavigate();
   const { session, loading } = useSession(pin);
-  const playerId = getPlayerId();
+  const playerId = usePlayer().uid;
 
   const isMember = Boolean(session?.players?.[playerId]);
 
