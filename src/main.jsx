@@ -1,16 +1,18 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { HashRouter } from 'react-router-dom';
 import App from './App.jsx';
 import { PlayerProvider } from './auth.jsx';
 import './styles/app.css';
 
+// HashRouter (URLs like /#/fruit-interdit/1234) needs no server-side rewrite, so
+// deep links and refreshes work on any static host, including GitHub Pages sub-paths.
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <HashRouter>
       <PlayerProvider>
         <App />
       </PlayerProvider>
-    </BrowserRouter>
+    </HashRouter>
   </React.StrictMode>,
 );
