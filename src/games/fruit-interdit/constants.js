@@ -1,7 +1,7 @@
 // --- Fruit Interdit configuration (tune everything here) ---
 
 // Session length in seconds.
-export const DURATION_SEC = 240; // 4 minutes
+export const DURATION_SEC = 600; // 10 minutes
 
 // Combo: entering the same fruit type back-to-back multiplies its points.
 // Multiplier = min(comboStreak, MAX_COMBO). A different fruit resets the streak to 1.
@@ -33,6 +33,6 @@ export const SPECIAL_CODES = {
   ATY2: { points: 1000, announcement: { emoji: '👶', text: '💙 Louphi' } },
   ATY3: { points: 1000, announcement: { emoji: '🧙‍♀️', text: 'La sorcière Charlotte 🔮' } },
   ATY4: { points: 1000, announcement: { emoji: '👶', text: '💗 Lalali' } },
-  ATY5: { points: 1000, announcement: { emoji: '👶', text: '💙 bébé M.Lacombe' } },
+  ATY5: { points: 1000, announcement: { emoji: '🦸', text: '💙 Ozie' } },
   ATY6: { points: 1000, announcement: { emoji: '👶', text: 'Bébé Guérin 🍼' } },
 };
