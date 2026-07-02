@@ -1,6 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { submitCode, endSession, toLeaderboard } from './session.js';
-import { FRUITS } from './constants.js';
+import {
+  FRUITS,
+  FRUIT_KEYS,
+  SECRET_CODE,
+  SECRET_CODE_REVEAL_SEC,
+} from './constants.js';
 import Timer from '../../components/Timer.jsx';
 import Leaderboard from '../../components/Leaderboard.jsx';
 import FruitCounts from '../../components/FruitCounts.jsx';
@@ -22,6 +27,28 @@ export default function Game({ pin, session, playerId }) {
 
   const me = session.players?.[playerId] || { points: 0, fruitCounts: {} };
   const leaderboard = toLeaderboard(session.players);
+
+  // Secret code reveal: either this player collected all 6 fruit categories,
+  // or the timer dropped below the reveal threshold (then everyone sees it).
+  const foundAllFruits = FRUIT_KEYS.every(
+    (key) => (me.fruitCounts || {})[key] > 0,
+  );
+  const [timeReveal, setTimeReveal] = useState(
+    () =>
+      !!session.endsAt &&
+      session.endsAt - Date.now() <= SECRET_CODE_REVEAL_SEC * 1000,
+  );
+  useEffect(() => {
+    if (timeReveal || !session.endsAt) return undefined;
+    const revealAt = session.endsAt - SECRET_CODE_REVEAL_SEC * 1000;
+    const check = () => {
+      if (Date.now() >= revealAt) setTimeReveal(true);
+    };
+    check();
+    const interval = setInterval(check, 1000);
+    return () => clearInterval(interval);
+  }, [session.endsAt, timeReveal]);
+  const showSecretCode = foundAllFruits || timeReveal;
 
   // Watch every player's node for a broadcast announcement and show new ones.
   const [announce, setAnnounce] = useState(null);
@@ -122,6 +149,17 @@ export default function Game({ pin, session, playerId }) {
 
       {feedback && (
         <p className={`feedback feedback--${feedback.type}`}>{feedback.text}</p>
+      )}
+
+      {showSecretCode && (
+        <div className="secret-code">
+          <span className="secret-code__label">
+            {foundAllFruits
+              ? '🏆 Les 6 catégories trouvées ! Code secret :'
+              : '⏳ Code secret révélé :'}
+          </span>
+          <span className="secret-code__value">{SECRET_CODE}</span>
+        </div>
       )}
 
       <section className="game__section">
