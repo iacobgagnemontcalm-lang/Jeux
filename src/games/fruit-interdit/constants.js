@@ -13,8 +13,8 @@ export const MAX_COMBO = 5;
 export const FRUITS = {
   tomato: { prefix: 'TOM', points: 1000, label: 'Tomate', emoji: '🍅' },
   mango: { prefix: 'MAN', points: 600, label: 'Mangue', emoji: '🥭' },
+  lime: { prefix: 'LIM', points: 350, label: 'Citron vert', emoji: '🍋‍🟩' },
   lemon: { prefix: 'LEM', points: 350, label: 'Citron', emoji: '🍋' },
-  lime: { prefix: 'LIM', points: 350, label: 'Citron vert', emoji: '🟢' },
   apple: { prefix: 'APP', points: 200, label: 'Pomme', emoji: '🍎' },
   blueberry: { prefix: 'BLU', points: 100, label: 'Myrtille', emoji: '🫐' },
 };
