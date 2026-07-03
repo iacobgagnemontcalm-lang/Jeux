@@ -376,6 +376,9 @@ body {
 }
 .code-input {
   flex: 1;
+  /* Let the input shrink below its placeholder's width so the submit button
+     stays on-screen on narrow phones. */
+  min-width: 0;
   font-family: inherit;
   font-size: 20px;
   letter-spacing: 2px;
