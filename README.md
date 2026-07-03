@@ -26,7 +26,7 @@ Players find them and type the code into the app to score. Each session lasts
 | Tomate       | `TOM`  | 1000   |
 | Mangue       | `MAN`  | 600    |
 | Citron vert  | `LIM`  | 350    |
-| Citron       | `LEM`  | 350    |
+| Citron       | `LEM`  | 500    |
 | Pomme        | `APP`  | 200    |
 | Myrtille     | `BLU`  | 100    |
 
