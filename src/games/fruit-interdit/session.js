@@ -107,23 +107,31 @@ export async function submitCode(pin, playerId, raw) {
 
   const playerRef = ref(db, `sessions/${pin}/players/${playerId}`);
 
-  // Special code: flat points + broadcast announcement (stored on the player's
-  // own node, which every client reads — no extra security rule needed).
+  // Special code: flat points (possibly a penalty; score floors at 0 to
+  // satisfy the security rules) + broadcast announcement (stored on the
+  // player's own node, which every client reads — no extra rule needed).
   if (parsed.kind === 'special') {
     const { points, announcement } = parsed.special;
+    let text = announcement.text;
     await runTransaction(playerRef, (p) => {
       if (!p) return p;
+      text = announcement.text.replace('{name}', p.name || 'Un joueur');
       return {
         ...p,
-        points: (p.points || 0) + points,
+        points: Math.max(0, (p.points || 0) + points),
         announce: {
-          text: announcement.text,
+          text,
           emoji: announcement.emoji,
           at: Date.now(),
         },
       };
     });
-    return { ok: true, kind: 'special', awarded: points, announcement };
+    return {
+      ok: true,
+      kind: 'special',
+      awarded: points,
+      announcement: { ...announcement, text },
+    };
   }
 
   // Fruit code: award points (with combo multiplier) + tally, on the player node.

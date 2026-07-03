@@ -34,7 +34,9 @@ export const SECRET_CODE_CATEGORIES = 5;
 export const SECRET_CODE_REVEAL_SEC = 240; // 4 minutes remaining
 
 // Special (non-fruit) codes, matched as EXACT codes. Each awards points AND
-// broadcasts its own announcement to every player.
+// broadcasts its own announcement to every player. Points may be negative
+// (a penalty; the player's score never drops below 0 — see the database
+// rules). "{name}" in the announcement text is replaced by the player's name.
 export const SPECIAL_CODES = {
   ATY1: { points: 1000, announcement: { emoji: '🐍👶', text: '💙 Monsieur Couleuvre' } },
   ATY2: { points: 1000, announcement: { emoji: '👶', text: '💙 Louphi' } },
@@ -42,4 +44,7 @@ export const SPECIAL_CODES = {
   ATY4: { points: 1000, announcement: { emoji: '👶', text: '💗 Lalali' } },
   ATY5: { points: 1000, announcement: { emoji: '🦸', text: '💙 Ozie' } },
   ATY6: { points: 1000, announcement: { emoji: '⛹️‍♂️⚽', text: 'Bébé Guérin 🍼' } },
+  SHT1: { points: -500, announcement: { emoji: '🍺', text: '{name} doit faire un shotgun !' } },
+  SHT2: { points: -500, announcement: { emoji: '🍺', text: '{name} doit faire un shotgun !' } },
+  SHT3: { points: -500, announcement: { emoji: '🍺', text: '{name} doit faire un shotgun !' } },
 };

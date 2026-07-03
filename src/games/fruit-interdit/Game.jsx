@@ -102,8 +102,8 @@ export default function Game({ pin, session, playerId }) {
       if (res.ok) {
         if (res.kind === 'special') {
           setFeedback({
-            type: 'ok',
-            text: `${res.announcement.emoji} +${res.awarded}`,
+            type: res.awarded < 0 ? 'err' : 'ok',
+            text: `${res.announcement.emoji} ${res.awarded < 0 ? '' : '+'}${res.awarded}`,
           });
         } else {
           const fruit = FRUITS[res.fruit];
