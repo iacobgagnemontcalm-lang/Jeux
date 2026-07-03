@@ -9,7 +9,12 @@ import {
   runTransaction,
 } from 'firebase/database';
 import { db } from '../../firebase.js';
-import { DURATION_SEC, MAX_COMBO, FRUITS } from './constants.js';
+import {
+  DURATION_SEC,
+  MAX_COMBO,
+  FRUITS,
+  LOSER_ANNOUNCEMENT,
+} from './constants.js';
 import { parseCode } from './codes.js';
 
 // Player identity is the Firebase anonymous auth uid (see src/auth.jsx), passed
@@ -155,6 +160,19 @@ export async function submitCode(pin, playerId, raw) {
   });
 
   return { ok: true, kind: 'fruit', fruit, awarded, multiplier };
+}
+
+// Broadcast the periodic "loser" call-out. Written on the caller's own node
+// (the only one they may write), so the last-place player's device is the one
+// that announces them — every client runs the same check.
+export async function announceLoser(pin, playerId, name) {
+  await update(ref(db, `sessions/${pin}/players/${playerId}`), {
+    announce: {
+      text: LOSER_ANNOUNCEMENT.text.replace('{name}', name || 'Un joueur'),
+      emoji: LOSER_ANNOUNCEMENT.emoji,
+      at: Date.now(),
+    },
+  });
 }
 
 // --- Live subscription hook ---

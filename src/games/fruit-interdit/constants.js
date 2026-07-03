@@ -33,6 +33,12 @@ export const SECRET_CODE = '618';
 export const SECRET_CODE_CATEGORIES = 5;
 export const SECRET_CODE_REVEAL_SEC = 240; // 4 minutes remaining
 
+// Every LOSER_ANNOUNCE_SEC seconds during a game, the player currently in
+// last place is called out to everyone. Skipped while all players are tied
+// (nobody is strictly last) or with fewer than 2 players.
+export const LOSER_ANNOUNCE_SEC = 120; // every 2 minutes
+export const LOSER_ANNOUNCEMENT = { emoji: '🐢', text: '{name} est le loser !' };
+
 // Special (non-fruit) codes, matched as EXACT codes. Each awards points AND
 // broadcasts its own announcement to every player. Points may be negative
 // (a penalty; the player's score never drops below 0 — see the database

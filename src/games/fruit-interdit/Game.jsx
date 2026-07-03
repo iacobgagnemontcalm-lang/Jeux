@@ -1,11 +1,17 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { submitCode, endSession, toLeaderboard } from './session.js';
+import {
+  submitCode,
+  endSession,
+  toLeaderboard,
+  announceLoser,
+} from './session.js';
 import {
   FRUITS,
   FRUIT_KEYS,
   SECRET_CODE,
   SECRET_CODE_CATEGORIES,
   SECRET_CODE_REVEAL_SEC,
+  LOSER_ANNOUNCE_SEC,
 } from './constants.js';
 import Timer from '../../components/Timer.jsx';
 import Leaderboard from '../../components/Leaderboard.jsx';
@@ -80,6 +86,37 @@ export default function Game({ pin, session, playerId }) {
     const t = setTimeout(() => setAnnounce(null), 6000);
     return () => clearTimeout(t);
   }, [announce]);
+
+  // Every LOSER_ANNOUNCE_SEC, call out the player currently in last place.
+  // Each client checks each boundary; only the loser's own device broadcasts
+  // (players may only write their own node). Ties for last (or a session
+  // where everyone is equal) announce nobody. The boundary must be fresh
+  // (< 5s old) so a page reload doesn't replay an old call-out.
+  const loserBoundaryRef = useRef(0);
+  useEffect(() => {
+    if (session.status !== 'playing' || !session.startedAt) return undefined;
+    const periodMs = LOSER_ANNOUNCE_SEC * 1000;
+    const check = () => {
+      const now = Date.now();
+      if (session.endsAt && now >= session.endsAt) return;
+      const k = Math.floor((now - session.startedAt) / periodMs);
+      if (k < 1 || k <= loserBoundaryRef.current) return;
+      loserBoundaryRef.current = k;
+      if (now - (session.startedAt + k * periodMs) > 5000) return;
+      const ranked = toLeaderboard(session.players);
+      if (ranked.length < 2) return;
+      const last = ranked[ranked.length - 1];
+      const isStrictLast = ranked.filter(
+        (p) => (p.points || 0) === (last.points || 0),
+      ).length === 1;
+      if (isStrictLast && last.id === playerId) {
+        announceLoser(pin, playerId, last.name).catch(() => {});
+      }
+    };
+    check();
+    const interval = setInterval(check, 1000);
+    return () => clearInterval(interval);
+  }, [session.status, session.startedAt, session.endsAt, session.players, pin, playerId]);
 
   const handleExpire = useCallback(async () => {
     if (endingRef.current) return;
