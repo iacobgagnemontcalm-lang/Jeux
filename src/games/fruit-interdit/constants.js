@@ -27,9 +27,10 @@ export const PREFIX_TO_FRUIT = Object.fromEntries(
 );
 
 // Secret code revealed on a player's screen when they have collected at least
-// one fruit of each of the 6 categories, or (for everyone) once only
-// SECRET_CODE_REVEAL_SEC seconds remain on the timer.
+// one fruit from SECRET_CODE_CATEGORIES different categories, or (for
+// everyone) once only SECRET_CODE_REVEAL_SEC seconds remain on the timer.
 export const SECRET_CODE = '618';
+export const SECRET_CODE_CATEGORIES = 5;
 export const SECRET_CODE_REVEAL_SEC = 240; // 4 minutes remaining
 
 // Special (non-fruit) codes, matched as EXACT codes. Each awards points AND

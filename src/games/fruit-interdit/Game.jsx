@@ -4,6 +4,7 @@ import {
   FRUITS,
   FRUIT_KEYS,
   SECRET_CODE,
+  SECRET_CODE_CATEGORIES,
   SECRET_CODE_REVEAL_SEC,
 } from './constants.js';
 import Timer from '../../components/Timer.jsx';
@@ -28,11 +29,12 @@ export default function Game({ pin, session, playerId }) {
   const me = session.players?.[playerId] || { points: 0, fruitCounts: {} };
   const leaderboard = toLeaderboard(session.players);
 
-  // Secret code reveal: either this player collected all 6 fruit categories,
-  // or the timer dropped below the reveal threshold (then everyone sees it).
-  const foundAllFruits = FRUIT_KEYS.every(
-    (key) => (me.fruitCounts || {})[key] > 0,
-  );
+  // Secret code reveal: either this player collected enough different fruit
+  // categories, or the timer dropped below the reveal threshold (then
+  // everyone sees it).
+  const foundEnoughFruits =
+    FRUIT_KEYS.filter((key) => (me.fruitCounts || {})[key] > 0).length >=
+    SECRET_CODE_CATEGORIES;
   const [timeReveal, setTimeReveal] = useState(
     () =>
       !!session.endsAt &&
@@ -48,7 +50,7 @@ export default function Game({ pin, session, playerId }) {
     const interval = setInterval(check, 1000);
     return () => clearInterval(interval);
   }, [session.endsAt, timeReveal]);
-  const showSecretCode = foundAllFruits || timeReveal;
+  const showSecretCode = foundEnoughFruits || timeReveal;
 
   // Watch every player's node for a broadcast announcement and show new ones.
   const [announce, setAnnounce] = useState(null);
@@ -154,8 +156,8 @@ export default function Game({ pin, session, playerId }) {
       {showSecretCode && (
         <div className="secret-code">
           <span className="secret-code__label">
-            {foundAllFruits
-              ? '🏆 Les 6 catégories trouvées ! Code secret :'
+            {foundEnoughFruits
+              ? `🏆 ${SECRET_CODE_CATEGORIES} catégories trouvées ! Code secret :`
               : '⏳ Code secret révélé :'}
           </span>
           <span className="secret-code__value">{SECRET_CODE}</span>
