@@ -1,7 +1,8 @@
 # Jeux 🎮
 
 A web app that hosts multiple party games. The home screen lists the available
-games as buttons; picking one opens it. The first game is **Fruit Interdit**.
+games as buttons; picking one opens it. Current games: **Fruit Interdit** and
+**Turbo Soccer**.
 
 Built with **React + Vite** and backed by **Firebase Realtime Database** for live,
 cross-device sync (shared leaderboard, timer, code claiming).
@@ -41,6 +42,25 @@ All of this (prefixes, points, duration, combo cap) lives in
 4. Everyone hunts and enters codes. The screen shows the live **palmarès**
    (leaderboard), your own points, and your per-fruit tally.
 5. When time runs out, the final palmarès is shown.
+
+## Turbo Soccer ⚽🚗
+
+A local arcade game (no Firebase needed): two cars face off in a soccer arena,
+one goal on each side. Push the ball around, but the real weapon is the **nose
+hit** — striking the ball with the front bumper at speed sends it flying, and
+even more so with the turbo. First to lead when the 2-minute clock runs out
+wins; a tie goes to **golden goal** (next goal wins).
+
+- **Modes:** 1 player (vs a simple AI) or 2 players on the same keyboard.
+- **Player 1 (blue):** `WASD`/`ZQSD` (physical position, so it works on AZERTY
+  too) + `Left Shift` or `Space` for turbo.
+- **Player 2 (red):** arrow keys + `Right Shift` for turbo.
+- **Touch devices:** on-screen ◀ ▶ 🚀 buttons; the car accelerates by itself.
+- Turbo drains a gauge that recharges over time.
+
+Everything lives in `src/games/soccer-cars/` — `engine.js` (canvas physics +
+rendering, no dependencies) and `SoccerCars.jsx` (menu + screen + touch
+controls).
 
 ## Setup
 

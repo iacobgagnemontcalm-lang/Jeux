@@ -579,3 +579,123 @@ body {
 @keyframes ann-bounce {
   50% { transform: translateY(-8px); }
 }
+
+/* --- Turbo Soccer (soccer de voitures) --- */
+.ts-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background:
+    radial-gradient(circle at 50% 0%, #14532d, transparent 60%),
+    linear-gradient(180deg, #0a2e1c 0%, #04140e 100%);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ts-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.ts-quit {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+.ts-quit:hover {
+  color: var(--text);
+}
+.ts-menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ts-controls-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 14px 18px;
+  font-size: 14px;
+}
+.ts-controls-card h3 {
+  margin: 0 0 8px;
+}
+.ts-controls-card h4 {
+  margin: 0 0 4px;
+}
+.ts-controls-card p {
+  margin: 0 0 10px;
+  line-height: 1.7;
+}
+.ts-controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 480px) {
+  .ts-controls-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.ts-p1 { color: #9cc4ff; }
+.ts-p2 { color: #ffb3a8; }
+.ts-controls-card kbd {
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--panel-border);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  padding: 1px 7px;
+  margin: 0 2px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+.ts-touchpad {
+  position: absolute;
+  bottom: 14px;
+  z-index: 2;
+  display: flex;
+  gap: 10px;
+}
+.ts-touchpad--left { left: 14px; }
+.ts-touchpad--right { right: 14px; }
+.ts-touch-btn {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  background: rgba(0, 0, 0, 0.4);
+  color: var(--text);
+  font-size: 24px;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.ts-touch-btn:active {
+  background: rgba(255, 255, 255, 0.25);
+}
+.ts-touch-btn--boost {
+  border-color: var(--gold);
+}
+.ts-over-actions {
+  position: absolute;
+  left: 50%;
+  bottom: 12%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  gap: 14px;
+}

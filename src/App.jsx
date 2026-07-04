@@ -3,19 +3,20 @@ import { isFirebaseConfigured } from './firebase.js';
 import { usePlayer } from './auth.jsx';
 import GameSelect from './pages/GameSelect.jsx';
 import FruitInterdit from './games/fruit-interdit/FruitInterdit.jsx';
+import SoccerCars from './games/soccer-cars/SoccerCars.jsx';
 
 function Notice({ title, children }) {
   return (
-    <div className="app-shell">
-      <div className="config-warning">
-        <h2>{title}</h2>
-        {children}
-      </div>
+    <div className="config-warning">
+      <h2>{title}</h2>
+      {children}
     </div>
   );
 }
 
-export default function App() {
+// Garde-fou pour les jeux qui ont besoin de Firebase (sync temps réel).
+// Les jeux 100% locaux (ex: Turbo Soccer) ne passent pas par ici.
+function RequireFirebase({ children }) {
   const { ready, error } = usePlayer();
 
   if (!isFirebaseConfigured) {
@@ -43,18 +44,26 @@ export default function App() {
   }
 
   if (!ready) {
-    return (
-      <div className="app-shell">
-        <p className="muted loading-center">Connexion…</p>
-      </div>
-    );
+    return <p className="muted loading-center">Connexion…</p>;
   }
 
+  return children;
+}
+
+export default function App() {
   return (
     <div className="app-shell">
       <Routes>
         <Route path="/" element={<GameSelect />} />
-        <Route path="/fruit-interdit/*" element={<FruitInterdit />} />
+        <Route
+          path="/fruit-interdit/*"
+          element={
+            <RequireFirebase>
+              <FruitInterdit />
+            </RequireFirebase>
+          }
+        />
+        <Route path="/soccer-cars" element={<SoccerCars />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>

@@ -10,6 +10,16 @@ export const GAMES = [
     accent: '#4cc35d',
     enabled: true,
   },
+  {
+    id: 'soccer-cars',
+    name: 'Turbo Soccer',
+    description:
+      'Deux voitures, un ballon: marquez des buts en frappant le ballon avec le nez de votre bolide.',
+    path: '/soccer-cars',
+    emoji: '🚗',
+    accent: '#3b7de2',
+    enabled: true,
+  },
   // Example of a future, not-yet-available game:
   // {
   //   id: 'prochain-jeu',
