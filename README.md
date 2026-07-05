@@ -69,10 +69,14 @@ system as Fruit Interdit (Firebase required). Up to **4 players**.
 
 - The host creates a session and picks the **difficulty** in the lobby
   (Facile / Moyen / Difficile / Extrême).
-- Turn order is random. On your turn you **spin the wheel** of the remaining
-  NFL teams (all 32 at the start; each spun team is removed).
-- From the team you land on, you fill one of your open roster slots — **QB,
-  RB1, RB2, WR1, WR2, TE or FLEX** (FLEX = RB/WR/TE). Two ways to pick:
+- The game is played in **7 rounds** (one per roster slot). Each round, one
+  player — the *spinner* — **spins the wheel** of the remaining NFL teams
+  (spun teams are removed), then **everyone drafts from that same team**: the
+  spinner picks first, then the others in seat order, and each NFL player can
+  only be taken once. The spinner seat shifts by one every round, so the
+  game's (random) first player picks last in round 2, and so on.
+- Each pick fills one of your open roster slots — **QB, RB1, RB2, WR1, WR2,
+  TE or FLEX** (FLEX = RB/WR/TE). Two ways to pick:
   - **Name the player from memory** — if your spelling is close enough for the
     difficulty (50% / 70% / 85% / 100% of the name), that player scores a
     **×1.2 bonus** at the end. A miss forces you to pick from the list.

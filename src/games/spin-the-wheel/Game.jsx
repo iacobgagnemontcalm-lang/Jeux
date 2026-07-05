@@ -69,15 +69,34 @@ function RosterBoard({ players, currentUid, meId }) {
 export default function Game({ pin, session, playerId }) {
   const players = toPlayerList(session);
   const order = session.order || [];
+  const n = order.length;
+  // turnIndex = total picks made. See commitPick in session.js for the round
+  // model (one team per round, spinner picks first, seat order shifts).
   const turnIndex = session.turnIndex || 0;
-  const currentUid = order.length ? order[turnIndex % order.length] : null;
+  const round = n ? Math.floor(turnIndex / n) : 0;
+  const picksInRound = n ? turnIndex % n : 0;
+  const spinnerUid = n ? order[round % n] : null;
+  const currentUid = n ? order[(round + picksInRound) % n] : null;
+  const spinnerPlayer = session.players?.[spinnerUid];
   const currentPlayer = session.players?.[currentUid];
-  const isMyTurn = currentUid === playerId;
+  const isSpinner = spinnerUid === playerId;
+  const isMyPick = currentUid === playerId;
   const me = session.players?.[playerId];
   const difficulty =
     DIFFICULTIES[session.difficulty] || DIFFICULTIES[DEFAULT_DIFFICULTY];
   const spin = session.spin || null;
   const remaining = remainingTeams(session.usedTeams);
+
+  // NFL players already drafted from this round's team (teams never repeat
+  // across rounds, so any roster entry on that team was picked this round).
+  const takenIds = new Set();
+  if (spin) {
+    players.forEach((p) =>
+      Object.values(p.roster || {}).forEach((pk) => {
+        if (pk.team === spin.team) takenIds.add(pk.id);
+      }),
+    );
+  }
 
   // --- NFL rosters (Sleeper), needed for the pick lists & name matching ---
   const [rosters, setRosters] = useState(null);
@@ -113,13 +132,17 @@ export default function Game({ pin, session, playerId }) {
   }, [spin?.nonce, turnIndex]);
 
   const settled = Boolean(spin) && settledNonce === spin.nonce;
-  const myPickPhase = isMyTurn && spin && settled && spin.by === playerId;
+  const myPickPhase = isMyPick && spin && settled;
   const myOpenSlots = openSlots(me);
   const positions = slot ? SLOT_POSITIONS[slot] : [];
-  const candidates =
+  // Players already drafted this round are off the menu — and off the
+  // name-guess pool (they're kept aside for a clearer "déjà pris" message).
+  const allEligible =
     myPickPhase && slot && rosters
       ? eligiblePlayers(rosters, spin.team, positions)
       : [];
+  const candidates = allEligible.filter((c) => !takenIds.has(c.id));
+  const takenCandidates = allEligible.filter((c) => takenIds.has(c.id));
 
   const handleSpin = async () => {
     if (busy || !remaining.length) return;
@@ -160,27 +183,32 @@ export default function Game({ pin, session, playerId }) {
       });
       await pick(m.player, true);
     } else {
+      const taken = bestMatch(guess, takenCandidates, difficulty.threshold);
       setGuessFailed(true);
       setMode('list');
       setFeedback({
         type: 'err',
-        text: 'Raté ! Choisissez dans la liste (sans bonus).',
+        text: taken
+          ? `${taken.player.name} est déjà pris ! Choisissez dans la liste (sans bonus).`
+          : 'Raté ! Choisissez dans la liste (sans bonus).',
       });
     }
   };
 
   // --- Status line ---
+  const roundLabel = `Ronde ${Math.min(round + 1, SLOTS.length)}/${SLOTS.length}`;
   let statusText;
   if (!spin) {
-    statusText = isMyTurn
+    statusText = isSpinner
       ? 'À vous de jouer ! Faites tourner la roue.'
-      : `Au tour de ${currentPlayer?.name || '…'} — en attente du spin.`;
+      : `${spinnerPlayer?.name || '…'} fait tourner la roue…`;
   } else if (!settled) {
     statusText = 'La roue tourne…';
   } else {
-    statusText = isMyTurn
-      ? `Vous avez obtenu les ${TEAMS[spin.team]?.name} !`
-      : `${currentPlayer?.name || '…'} choisit un joueur des ${TEAMS[spin.team]?.name}…`;
+    const teamName = TEAMS[spin.team]?.name || spin.team;
+    statusText = isMyPick
+      ? `${teamName} — à vous de choisir ! (${picksInRound + 1}/${n})`
+      : `${teamName} — ${currentPlayer?.name || '…'} choisit… (${picksInRound + 1}/${n})`;
   }
 
   return (
@@ -190,7 +218,7 @@ export default function Game({ pin, session, playerId }) {
       <div className="stw-topbar">
         <span className="stw-topbar__turn">{statusText}</span>
         <span className="stw-topbar__diff">
-          {difficulty.label} · bonus ×{NAME_BONUS}
+          {roundLabel} · {difficulty.label} · bonus ×{NAME_BONUS}
         </span>
       </div>
 
@@ -200,7 +228,7 @@ export default function Game({ pin, session, playerId }) {
         onSettled={(s) => setSettledNonce(s.nonce)}
       />
 
-      {isMyTurn && !spin && (
+      {isSpinner && !spin && (
         <button
           type="button"
           className="btn btn--primary btn--big"
@@ -305,7 +333,11 @@ export default function Game({ pin, session, playerId }) {
                     </li>
                   ))}
                   {candidates.length === 0 && (
-                    <li className="muted">Aucun joueur trouvé à ce poste.</li>
+                    <li className="muted">
+                      {takenCandidates.length
+                        ? 'Tous les joueurs à ce poste sont déjà pris — choisissez une autre case.'
+                        : 'Aucun joueur trouvé à ce poste.'}
+                    </li>
                   )}
                 </ul>
               )}

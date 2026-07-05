@@ -105,29 +105,25 @@ export async function writeSpin(pin, playerId, team) {
   });
 }
 
-// Commit the pick: fill the slot, burn the team, clear the spin and hand the
-// turn over — one atomic multi-path update. `usedTeams/$team` is
-// write-once in the rules, so a double-tap can't burn two slots.
+// Commit a pick — one atomic multi-path update.
+//
+// Round model: the game is played in SLOTS.length rounds. Each round, one
+// player (the spinner) spins a team, picks first, then every other player
+// picks a *different* player from that same team, in seating order. The
+// spinner advances by one seat each round, so the game's first player picks
+// last in round 2, and so on.
+//
+// All of it derives from a single counter, `turnIndex` = total picks made:
+//   round        = floor(turnIndex / nPlayers)
+//   picksInRound = turnIndex % nPlayers
+//   spinner      = order[round % nPlayers]
+//   currentPick  = order[(round + picksInRound) % nPlayers]
+// The last pick of a round burns the team (write-once `usedTeams`, so a
+// double-tap can't commit twice) and clears the spin; the last pick of the
+// last round ends the game.
 export async function commitPick(pin, playerId, session, { slot, player, team, bonus }) {
-  const order = session.order || [];
-  const turnIndex = session.turnIndex || 0;
-
-  // Simulate the roster after this pick to decide who plays next (players
-  // with a complete roster are skipped) or whether the game is over.
-  const players = { ...(session.players || {}) };
-  players[playerId] = {
-    ...players[playerId],
-    roster: { ...(players[playerId]?.roster || {}), [slot]: true },
-  };
-
-  let nextIndex = null;
-  for (let step = 1; step <= order.length; step += 1) {
-    const i = turnIndex + step;
-    if (!rosterComplete(players[order[i % order.length]])) {
-      nextIndex = i;
-      break;
-    }
-  }
+  const n = (session.order || []).length;
+  const total = (session.turnIndex || 0) + 1; // picks made once this commits
 
   const updates = {
     [`players/${playerId}/roster/${slot}`]: {
@@ -137,13 +133,13 @@ export async function commitPick(pin, playerId, session, { slot, player, team, b
       team,
       bonus: Boolean(bonus),
     },
-    [`usedTeams/${team}`]: playerId,
-    spin: null,
+    turnIndex: total,
   };
-  if (nextIndex === null) {
-    updates.status = 'ended';
-  } else {
-    updates.turnIndex = nextIndex;
+  if (n > 0 && total % n === 0) {
+    // Round complete: burn the team, clear the wheel for the next spinner.
+    updates[`usedTeams/${team}`] = playerId;
+    updates.spin = null;
+    if (total >= SLOTS.length * n) updates.status = 'ended';
   }
   await update(ref(db, `${BASE}/${pin}`), updates);
 }

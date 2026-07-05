@@ -72,7 +72,8 @@ export default function Lobby({ pin, session, playerId }) {
 
       {tooMany && (
         <p className="error-text">
-          Maximum {MAX_PLAYERS} joueurs (7 choix chacun sur 32 équipes).
+          Maximum {MAX_PLAYERS} joueurs (chaque ronde, tout le monde pige
+          dans la même équipe).
         </p>
       )}
 

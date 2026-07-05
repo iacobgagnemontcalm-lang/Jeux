@@ -16,8 +16,10 @@ export const SLOT_POSITIONS = {
 
 export const POSITIONS = ['QB', 'RB', 'WR', 'TE'];
 
-// 7 slots per player and each spin burns one of the 32 teams, so at most
-// 4 players can complete a roster (4 × 7 = 28 teams).
+// Each round everyone drafts a distinct player from the same team, so the
+// player count can't exceed the smallest position list (4 QBs per team, see
+// MAX_PER_POSITION in sleeper.js) — otherwise a round could dead-end with
+// someone's last open slot having no player left to take.
 export const MAX_PLAYERS = 4;
 
 // Bonus multiplier applied to a player's projection when he was picked by
