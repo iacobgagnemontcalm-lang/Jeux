@@ -4,14 +4,14 @@ import { POSITIONS } from './constants.js';
 import { TEAMS } from './teams.js';
 
 const PLAYERS_URL = 'https://api.sleeper.app/v1/players/nfl';
-const ROSTER_CACHE_KEY = 'stw_rosters_v2';
+const ROSTER_CACHE_KEY = 'stw_rosters_v3';
 const ROSTER_TTL_MS = 24 * 60 * 60 * 1000; // refetch the big players dump daily
 const PROJ_CACHE_KEY = 'stw_proj_v2';
 const PROJ_TTL_MS = 6 * 60 * 60 * 1000;
 
 // Keep the lists short enough to browse on a phone (depth players project ~0
-// points anyway).
-const MAX_PER_POSITION = { QB: 4, RB: 8, WR: 10, TE: 6 };
+// points anyway). Teams carry a single DEF and usually one kicker.
+const MAX_PER_POSITION = { QB: 4, RB: 8, WR: 10, TE: 6, K: 2, DEF: 1 };
 
 function readCache(key, ttl) {
   try {
@@ -39,11 +39,12 @@ function writeCache(key, data) {
 function reduceRosters(all) {
   const buckets = {};
   for (const abbr of Object.keys(TEAMS)) {
-    buckets[abbr] = { QB: [], RB: [], WR: [], TE: [] };
+    buckets[abbr] = Object.fromEntries(POSITIONS.map((pos) => [pos, []]));
   }
   for (const [id, p] of Object.entries(all)) {
     if (!p || !buckets[p.team] || !POSITIONS.includes(p.position)) continue;
-    if (p.status && p.status !== 'Active') continue;
+    // Team defenses (id = team abbr) carry no status; keep them.
+    if (p.position !== 'DEF' && p.status && p.status !== 'Active') continue;
     const name =
       p.full_name || [p.first_name, p.last_name].filter(Boolean).join(' ');
     if (!name) continue;

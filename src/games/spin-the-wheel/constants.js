@@ -1,8 +1,9 @@
 // --- Spin the Wheel configuration (tune everything here) ---
 
 // Fantasy roster slots each player must fill, and which NFL positions
-// are eligible for each slot.
-export const SLOTS = ['QB', 'RB1', 'RB2', 'WR1', 'WR2', 'TE', 'FLEX'];
+// are eligible for each slot. DEF is the team defense (Sleeper models it as
+// a "player" whose id is the team abbreviation).
+export const SLOTS = ['QB', 'RB1', 'RB2', 'WR1', 'WR2', 'TE', 'FLEX', 'K', 'DEF'];
 
 export const SLOT_POSITIONS = {
   QB: ['QB'],
@@ -12,15 +13,49 @@ export const SLOT_POSITIONS = {
   WR2: ['WR'],
   TE: ['TE'],
   FLEX: ['RB', 'WR', 'TE'],
+  K: ['K'],
+  DEF: ['DEF'],
 };
 
-export const POSITIONS = ['QB', 'RB', 'WR', 'TE'];
+export const POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
 
-// Each round everyone drafts a distinct player from the same team, so the
-// player count can't exceed the smallest position list (4 QBs per team, see
-// MAX_PER_POSITION in sleeper.js) — otherwise a round could dead-end with
-// someone's last open slot having no player left to take.
-export const MAX_PLAYERS = 4;
+// Every NFL player — kickers and defenses included — can be drafted by only
+// one player per game (in shared mode, only one per round-team).
+
+// Bonus multiplier applied to a slot by finishing position projection: the
+// player with the best projection at a given slot gets ×1.2, second ×1.1,
+// everyone else ×1.0. Indexed by rank (0 = best). Stacks with NAME_BONUS.
+export const RANK_BONUS = [1.2, 1.1];
+
+// Bots the host can add in the lobby. `skill` biases how good a pick they
+// make from the available players (see botChoose in bot.js).
+export const BOTS = {
+  noob: { label: 'Recrue', emoji: '🤖', skill: 0 },
+  connaisseur: { label: 'Connaisseur', emoji: '🤖', skill: 0.5 },
+  expert: { label: 'Expert', emoji: '🤖', skill: 1 },
+};
+export const BOT_KEYS = ['noob', 'connaisseur', 'expert'];
+
+// The two ways to play, chosen by the host in the lobby.
+// - solo: on your turn you spin and the team is yours alone (original rules).
+//   Every pick burns a team, so players × slots must fit in 32 teams → max 3.
+// - shared: one spin per round, everyone drafts a distinct player from that
+//   team, the spinner picks first and the spinner seat shifts each round.
+//   Capped by the smallest unique-position list (4 QBs per team) → max 4.
+export const MODES = {
+  shared: {
+    label: 'Équipe partagée',
+    hint: 'Une équipe par ronde, tout le monde pige dedans',
+    maxPlayers: 4,
+  },
+  solo: {
+    label: 'Chacun son équipe',
+    hint: 'À ton tour, tourne la roue et garde l\'équipe pour toi',
+    maxPlayers: 3,
+  },
+};
+export const MODE_KEYS = ['shared', 'solo'];
+export const DEFAULT_MODE = 'shared';
 
 // Bonus multiplier applied to a player's projection when he was picked by
 // typing his name (instead of choosing from the list).

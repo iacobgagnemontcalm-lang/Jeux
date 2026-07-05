@@ -1,17 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { writeSpin, commitPick, toPlayerList } from './session.js';
+import { writeSpin, commitPick, toPlayerList, deriveTurn } from './session.js';
 import {
   DIFFICULTIES,
   DEFAULT_DIFFICULTY,
   SLOTS,
   SLOT_POSITIONS,
   NAME_BONUS,
+  SPIN_MS,
   openSlots,
 } from './constants.js';
 import { TEAMS, remainingTeams } from './teams.js';
 import { fetchRosters, eligiblePlayers } from './sleeper.js';
 import { bestMatch } from './match.js';
+import { botChoose } from './bot.js';
 import Wheel from './Wheel.jsx';
 
 function TeamChip({ abbr }) {
@@ -68,27 +70,24 @@ function RosterBoard({ players, currentUid, meId }) {
 
 export default function Game({ pin, session, playerId }) {
   const players = toPlayerList(session);
-  const order = session.order || [];
-  const n = order.length;
-  // turnIndex = total picks made. See commitPick in session.js for the round
-  // model (one team per round, spinner picks first, seat order shifts).
-  const turnIndex = session.turnIndex || 0;
-  const round = n ? Math.floor(turnIndex / n) : 0;
-  const picksInRound = n ? turnIndex % n : 0;
-  const spinnerUid = n ? order[round % n] : null;
-  const currentUid = n ? order[(round + picksInRound) % n] : null;
+  const { n, solo, turnIndex, round, picksInRound, spinnerUid, currentUid } =
+    deriveTurn(session);
   const spinnerPlayer = session.players?.[spinnerUid];
   const currentPlayer = session.players?.[currentUid];
   const isSpinner = spinnerUid === playerId;
   const isMyPick = currentUid === playerId;
+  const currentIsBot = Boolean(currentPlayer?.bot);
+  const isHost = session.hostId === playerId;
   const me = session.players?.[playerId];
   const difficulty =
     DIFFICULTIES[session.difficulty] || DIFFICULTIES[DEFAULT_DIFFICULTY];
   const spin = session.spin || null;
   const remaining = remainingTeams(session.usedTeams);
 
-  // NFL players already drafted from this round's team (teams never repeat
-  // across rounds, so any roster entry on that team was picked this round).
+  // NFL players already off-limits for this pick. A player can be drafted only
+  // once ever, so in solo mode nobody on the spun team may already be owned; in
+  // shared mode teams never repeat, so any roster entry on the spun team was
+  // taken earlier this same round.
   const takenIds = new Set();
   if (spin) {
     players.forEach((p) =>
@@ -195,6 +194,64 @@ export default function Game({ pin, session, playerId }) {
     }
   };
 
+  // --- Host drives the bots ---
+  // Bots have no client of their own, so the host's device spins and picks for
+  // whichever bot is on the clock. Actions are keyed by turn+nonce so each
+  // fires once; short delays keep it feeling human and let the wheel animate.
+  const botActRef = useRef('');
+  useEffect(() => {
+    if (!isHost || !rosters || !currentIsBot || session.status !== 'playing') {
+      return undefined;
+    }
+    const level = currentPlayer.bot;
+
+    // Bot needs to spin first (it's the spinner and the wheel is idle).
+    if (!spin) {
+      if (spinnerUid !== currentUid || !remaining.length) return undefined;
+      const sig = `spin:${turnIndex}`;
+      if (botActRef.current === sig) return undefined;
+      const t = setTimeout(() => {
+        botActRef.current = sig;
+        const team = remaining[Math.floor(Math.random() * remaining.length)];
+        writeSpin(pin, currentUid, team).catch(() => {});
+      }, 800);
+      return () => clearTimeout(t);
+    }
+
+    // Wheel has settled: make the bot's pick.
+    if (!settled) return undefined;
+    const sig = `pick:${turnIndex}:${spin.nonce}`;
+    if (botActRef.current === sig) return undefined;
+    const t = setTimeout(() => {
+      botActRef.current = sig;
+      const choice = botChoose(
+        level,
+        openSlots(currentPlayer),
+        rosters,
+        spin.team,
+        takenIds,
+      );
+      if (!choice) return; // no legal pick (extremely rare); wait it out
+      commitPick(pin, currentUid, session, {
+        slot: choice.slot,
+        player: choice.player,
+        team: spin.team,
+        bonus: false,
+      }).catch(() => {});
+    }, 700);
+    return () => clearTimeout(t);
+  }, [
+    isHost,
+    rosters,
+    currentIsBot,
+    currentUid,
+    spinnerUid,
+    spin?.nonce,
+    settled,
+    turnIndex,
+    session.status,
+  ]);
+
   // --- Status line ---
   const roundLabel = `Ronde ${Math.min(round + 1, SLOTS.length)}/${SLOTS.length}`;
   let statusText;
@@ -206,9 +263,10 @@ export default function Game({ pin, session, playerId }) {
     statusText = 'La roue tourne…';
   } else {
     const teamName = TEAMS[spin.team]?.name || spin.team;
+    const counter = solo ? '' : ` (${picksInRound + 1}/${n})`;
     statusText = isMyPick
-      ? `${teamName} — à vous de choisir ! (${picksInRound + 1}/${n})`
-      : `${teamName} — ${currentPlayer?.name || '…'} choisit… (${picksInRound + 1}/${n})`;
+      ? `${teamName} — à vous de choisir !${counter}`
+      : `${teamName} — ${currentPlayer?.name || '…'} choisit…${counter}`;
   }
 
   return (

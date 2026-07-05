@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toPlayerList } from './session.js';
-import { SLOTS, NAME_BONUS } from './constants.js';
+import { SLOTS, NAME_BONUS, RANK_BONUS } from './constants.js';
 import { TEAMS } from './teams.js';
 import { fetchProjection } from './sleeper.js';
 
@@ -56,14 +56,47 @@ export default function Results({ session, playerId }) {
 
   const scored = useMemo(() => {
     if (!proj) return null;
+
+    // Points of a pick before the head-to-head rank bonus: the Sleeper
+    // projection, ×1.2 if the player was named from memory.
+    const pickPoints = (pick) => {
+      if (!pick) return 0;
+      const base = proj[pick.id] || 0;
+      return pick.bonus ? base * NAME_BONUS : base;
+    };
+
+    // Head-to-head bonus: at each slot, rank the players by that pick's points
+    // and reward the winner (×1.2), runner-up (×1.1), rest ×1.0. Ties share the
+    // better multiplier. rankMult[slot][playerId] → multiplier.
+    const rankMult = {};
+    SLOTS.forEach((slot) => {
+      rankMult[slot] = {};
+      const owned = players
+        .filter((p) => p.roster?.[slot])
+        .map((p) => ({ id: p.id, pts: pickPoints(p.roster[slot]) }))
+        .sort((a, b) => b.pts - a.pts);
+      let rank = 0;
+      owned.forEach((o, i) => {
+        if (i > 0 && o.pts < owned[i - 1].pts) rank = i; // ties keep the rank
+        rankMult[slot][o.id] = RANK_BONUS[rank] ?? 1;
+      });
+    });
+
     return players
       .map((p) => {
         const rows = SLOTS.map((slot) => {
           const pick = p.roster?.[slot];
           if (!pick) return { slot, pick: null, points: 0 };
           const base = proj[pick.id] || 0;
-          const points = pick.bonus ? base * NAME_BONUS : base;
-          return { slot, pick, base, points };
+          const named = pick.bonus ? base * NAME_BONUS : base;
+          const rankMultiplier = rankMult[slot][p.id] || 1;
+          return {
+            slot,
+            pick,
+            base,
+            rankMultiplier,
+            points: named * rankMultiplier,
+          };
         });
         const total = rows.reduce((sum, r) => sum + r.points, 0);
         return { ...p, rows, total };
@@ -117,7 +150,7 @@ export default function Results({ session, playerId }) {
             </div>
             <table className="stw-result-table">
               <tbody>
-                {p.rows.map(({ slot, pick, base, points }) => (
+                {p.rows.map(({ slot, pick, base, points, rankMultiplier }) => (
                   <tr key={slot}>
                     <td className="stw-slot-label">{slot}</td>
                     <td>
@@ -127,6 +160,12 @@ export default function Results({ session, playerId }) {
                           {pick.name}
                           {pick.bonus && (
                             <span className="stw-bonus">×{NAME_BONUS}</span>
+                          )}
+                          {rankMultiplier > 1 && (
+                            <span className="stw-rank-bonus">
+                              {rankMultiplier >= RANK_BONUS[0] ? '🥇' : '🥈'} ×
+                              {rankMultiplier}
+                            </span>
                           )}
                         </>
                       ) : (

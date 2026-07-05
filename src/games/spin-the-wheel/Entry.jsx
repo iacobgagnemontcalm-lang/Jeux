@@ -70,9 +70,9 @@ export default function Entry() {
         <h1>Spin the Wheel</h1>
       </header>
       <p className="muted">
-        À chaque ronde, un joueur fait tourner la roue des équipes NFL et
-        tout le monde choisit un joueur différent de cette équipe pour remplir
-        son alignement : QB, RB1, RB2, WR1, WR2, TE et FLEX.
+        Tournez la roue des 32 équipes NFL et bâtissez votre alignement
+        fantasy : QB, RB1, RB2, WR1, WR2, TE, FLEX, K et DEF. Deux modes,
+        difficulté réglable et bots à affronter.
       </p>
 
       <label className="field">

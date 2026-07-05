@@ -67,24 +67,33 @@ controls).
 A turn-based NFL fantasy draft on a wheel, using the same PIN/lobby session
 system as Fruit Interdit (Firebase required). Up to **4 players**.
 
-- The host creates a session and picks the **difficulty** in the lobby
-  (Facile / Moyen / Difficile / Extrême).
-- The game is played in **7 rounds** (one per roster slot). Each round, one
-  player — the *spinner* — **spins the wheel** of the remaining NFL teams
-  (spun teams are removed), then **everyone drafts from that same team**: the
-  spinner picks first, then the others in seat order, and each NFL player can
-  only be taken once. The spinner seat shifts by one every round, so the
-  game's (random) first player picks last in round 2, and so on.
+- The host creates a session and picks, in the lobby, the **mode**, the
+  **difficulty** (Facile / Moyen / Difficile / Extrême) and optionally adds
+  **bots** to play against (Recrue / Connaisseur / Expert).
+- **Two modes:**
+  - **Équipe partagée** (max 4): the game runs in **9 rounds** (one per roster
+    slot). Each round one player — the *spinner* — **spins the wheel** of the
+    remaining teams, then **everyone drafts a distinct player from that same
+    team**: the spinner picks first, the others in seat order. The spinner seat
+    shifts each round, so the (random) first player picks last in round 2.
+  - **Chacun son équipe** (max 3): on your turn you spin and the team is yours
+    alone — pick one player, then it's the next player's turn.
 - Each pick fills one of your open roster slots — **QB, RB1, RB2, WR1, WR2,
-  TE or FLEX** (FLEX = RB/WR/TE). Two ways to pick:
+  TE, FLEX, K or DEF** (FLEX = RB/WR/TE). Every NFL player — kickers and
+  defenses included — can be drafted only once. Two ways to pick:
   - **Name the player from memory** — if your spelling is close enough for the
     difficulty (50% / 70% / 85% / 100% of the name), that player scores a
     **×1.2 bonus** at the end. A miss forces you to pick from the list.
   - **Pick from the list** (players at that position, from the Sleeper depth
     chart) — no bonus.
 - When every roster is full, the game pulls each player's **season projection
-  from the Sleeper API** (PPR), applies the ×1.2 bonuses, and the highest
-  projected total wins.
+  from the Sleeper API** (PPR). Two bonuses stack on top: the ×1.2 name bonus,
+  and a **head-to-head slot bonus** — at each slot the player with the best
+  projection scores ×1.2, the runner-up ×1.1, everyone else ×1.0. Highest total
+  wins.
+- **Bots** are driven by the host's device. Expert bots draft the best
+  available starter, Connaisseurs pick from the top of the depth chart, and
+  Recrues pick at random.
 
 Rosters and projections come from the public [Sleeper API](https://docs.sleeper.com)
 (no key needed). Everything lives in `src/games/spin-the-wheel/`; the realtime

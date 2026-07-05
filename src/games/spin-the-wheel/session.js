@@ -10,6 +10,8 @@ import {
 import { db } from '../../firebase.js';
 import {
   DEFAULT_DIFFICULTY,
+  DEFAULT_MODE,
+  BOTS,
   SLOTS,
   openSlots,
   rosterComplete,
@@ -38,6 +40,7 @@ export async function createSession(hostId) {
       status: 'lobby',
       hostId,
       difficulty: DEFAULT_DIFFICULTY,
+      mode: DEFAULT_MODE,
       createdAt: serverTimestamp(),
     });
     return pin;
@@ -71,6 +74,51 @@ export async function joinSession(pin, playerId, name) {
 // Host picks the name-guess difficulty in the lobby.
 export async function setDifficulty(pin, difficulty) {
   await update(ref(db, `${BASE}/${pin}`), { difficulty });
+}
+
+// Host picks the game mode in the lobby (see MODES in constants.js).
+export async function setMode(pin, mode) {
+  await update(ref(db, `${BASE}/${pin}`), { mode });
+}
+
+// Host adds a bot player (its own node keyed by a bot_ id; the database rules
+// let any authed user write bot_* nodes so the host can drive them).
+export async function addBot(pin, level) {
+  const botId = `bot_${Math.random().toString(36).slice(2, 8)}`;
+  const label = BOTS[level]?.label || 'Bot';
+  await set(ref(db, `${BASE}/${pin}/players/${botId}`), {
+    name: `${BOTS[level]?.emoji || '🤖'} ${label}`,
+    bot: level,
+    joinedAt: Date.now(),
+  });
+}
+
+export async function removeBot(pin, botId) {
+  await set(ref(db, `${BASE}/${pin}/players/${botId}`), null);
+}
+
+// Derive whose turn it is from the single `turnIndex` counter (= total picks
+// made). Both modes share the counter; see commitPick for the round model.
+export function deriveTurn(session) {
+  const order = session?.order || [];
+  const n = order.length;
+  const solo = (session?.mode || DEFAULT_MODE) === 'solo';
+  const turnIndex = session?.turnIndex || 0;
+  const round = n ? Math.floor(turnIndex / n) : 0;
+  const picksInRound = n ? turnIndex % n : 0;
+  const spinnerUid = solo
+    ? n
+      ? order[turnIndex % n]
+      : null
+    : n
+      ? order[round % n]
+      : null;
+  const currentUid = solo
+    ? spinnerUid
+    : n
+      ? order[(round + picksInRound) % n]
+      : null;
+  return { n, solo, turnIndex, round, picksInRound, spinnerUid, currentUid };
 }
 
 function shuffle(arr) {
@@ -107,22 +155,28 @@ export async function writeSpin(pin, playerId, team) {
 
 // Commit a pick — one atomic multi-path update.
 //
-// Round model: the game is played in SLOTS.length rounds. Each round, one
-// player (the spinner) spins a team, picks first, then every other player
-// picks a *different* player from that same team, in seating order. The
-// spinner advances by one seat each round, so the game's first player picks
-// last in round 2, and so on.
-//
-// All of it derives from a single counter, `turnIndex` = total picks made:
+// The game is played in SLOTS.length rounds, and everything derives from a
+// single counter, `turnIndex` = total picks made:
 //   round        = floor(turnIndex / nPlayers)
 //   picksInRound = turnIndex % nPlayers
+//
+// 'shared' mode: each round one player (the spinner) spins a team, picks
+// first, then every other player picks a *different* player from that same
+// team, in seating order. The spinner seat advances each round, so the
+// game's first player picks last in round 2, and so on:
 //   spinner      = order[round % nPlayers]
 //   currentPick  = order[(round + picksInRound) % nPlayers]
-// The last pick of a round burns the team (write-once `usedTeams`, so a
-// double-tap can't commit twice) and clears the spin; the last pick of the
-// last round ends the game.
+// The last pick of a round burns the team and clears the spin.
+//
+// 'solo' mode: the spun team belongs to the current player alone —
+//   spinner = currentPick = order[turnIndex % nPlayers]
+// and every pick burns its team.
+//
+// `usedTeams` is write-once in the rules, so a double-tap can't commit the
+// same team twice. The last pick of the last round ends the game.
 export async function commitPick(pin, playerId, session, { slot, player, team, bonus }) {
   const n = (session.order || []).length;
+  const solo = (session.mode || DEFAULT_MODE) === 'solo';
   const total = (session.turnIndex || 0) + 1; // picks made once this commits
 
   const updates = {
@@ -135,12 +189,12 @@ export async function commitPick(pin, playerId, session, { slot, player, team, b
     },
     turnIndex: total,
   };
-  if (n > 0 && total % n === 0) {
-    // Round complete: burn the team, clear the wheel for the next spinner.
+  if (solo || (n > 0 && total % n === 0)) {
+    // The team is spent: clear the wheel for the next spin.
     updates[`usedTeams/${team}`] = playerId;
     updates.spin = null;
-    if (total >= SLOTS.length * n) updates.status = 'ended';
   }
+  if (total >= SLOTS.length * n) updates.status = 'ended';
   await update(ref(db, `${BASE}/${pin}`), updates);
 }
 

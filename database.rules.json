@@ -69,6 +69,10 @@
           ".write": "auth != null",
           ".validate": "newData.isString() && (newData.val() == 'easy' || newData.val() == 'medium' || newData.val() == 'hard' || newData.val() == 'extra')"
         },
+        "mode": {
+          ".write": "auth != null",
+          ".validate": "newData.isString() && (newData.val() == 'shared' || newData.val() == 'solo')"
+        },
         "order": {
           ".write": "auth != null",
           "$i": { ".validate": "newData.isString()" }
@@ -92,12 +96,14 @@
         },
         "players": {
           "$playerId": {
-            ".write": "auth != null && auth.uid == $playerId",
+            "// bots": "bot_* nodes are driven by the host, so any authed user may write them",
+            ".write": "auth != null && (auth.uid == $playerId || $playerId.beginsWith('bot_'))",
             "name": { ".validate": "newData.isString() && newData.val().length <= 30" },
             "joinedAt": { ".validate": "newData.isNumber()" },
+            "bot": { ".validate": "newData.isString() && (newData.val() == 'noob' || newData.val() == 'connaisseur' || newData.val() == 'expert')" },
             "roster": {
               "$slot": {
-                ".validate": "$slot == 'QB' || $slot == 'RB1' || $slot == 'RB2' || $slot == 'WR1' || $slot == 'WR2' || $slot == 'TE' || $slot == 'FLEX'",
+                ".validate": "$slot == 'QB' || $slot == 'RB1' || $slot == 'RB2' || $slot == 'WR1' || $slot == 'WR2' || $slot == 'TE' || $slot == 'FLEX' || $slot == 'K' || $slot == 'DEF'",
                 "id": { ".validate": "newData.isString() && newData.val().length <= 24" },
                 "name": { ".validate": "newData.isString() && newData.val().length <= 60" },
                 "pos": { ".validate": "newData.isString() && newData.val().length <= 4" },

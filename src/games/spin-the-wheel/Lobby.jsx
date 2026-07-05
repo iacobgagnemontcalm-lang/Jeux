@@ -1,11 +1,22 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { startSession, setDifficulty, toPlayerList } from './session.js';
+import {
+  startSession,
+  setDifficulty,
+  setMode,
+  addBot,
+  removeBot,
+  toPlayerList,
+} from './session.js';
 import {
   DIFFICULTIES,
   DIFFICULTY_KEYS,
   DEFAULT_DIFFICULTY,
-  MAX_PLAYERS,
+  MODES,
+  MODE_KEYS,
+  DEFAULT_MODE,
+  BOTS,
+  BOT_KEYS,
   NAME_BONUS,
 } from './constants.js';
 
@@ -14,7 +25,9 @@ export default function Lobby({ pin, session, playerId }) {
   const isHost = session.hostId === playerId;
   const players = toPlayerList(session);
   const difficulty = session.difficulty || DEFAULT_DIFFICULTY;
-  const tooMany = players.length > MAX_PLAYERS;
+  const mode = session.mode || DEFAULT_MODE;
+  const maxPlayers = MODES[mode].maxPlayers;
+  const tooMany = players.length > maxPlayers;
 
   const handleStart = async () => {
     setBusy(true);
@@ -34,6 +47,26 @@ export default function Lobby({ pin, session, playerId }) {
         <span className="pin-badge__value">{pin}</span>
         <span className="pin-badge__hint">Partagez-le pour que d'autres rejoignent</span>
       </div>
+
+      <section>
+        <h2>Mode de jeu</h2>
+        <div className="stw-diff-grid">
+          {MODE_KEYS.map((key) => (
+            <button
+              key={key}
+              type="button"
+              className={`stw-diff-btn${mode === key ? ' is-active' : ''}`}
+              disabled={!isHost}
+              onClick={() => setMode(pin, key)}
+            >
+              <span className="stw-diff-btn__label">{MODES[key].label}</span>
+              <span className="stw-diff-btn__hint">
+                {MODES[key].hint} · max {MODES[key].maxPlayers} joueurs
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
 
       <section>
         <h2>Difficulté</h2>
@@ -56,24 +89,56 @@ export default function Lobby({ pin, session, playerId }) {
           ))}
         </div>
         {!isHost && (
-          <p className="muted stw-diff-hint">Seul l'hôte choisit la difficulté.</p>
+          <p className="muted stw-diff-hint">
+            Seul l'hôte choisit le mode et la difficulté.
+          </p>
         )}
       </section>
 
-      <h2>Joueurs ({players.length}/{MAX_PLAYERS})</h2>
+      <h2>Joueurs ({players.length}/{maxPlayers})</h2>
       <ul className="player-list">
         {players.map((p) => (
           <li key={p.id} className={p.id === playerId ? 'is-me' : ''}>
             {p.name}
             {p.id === session.hostId && <span className="tag">Hôte</span>}
+            {p.bot && <span className="tag stw-tag-bot">Bot</span>}
+            {isHost && p.bot && (
+              <button
+                type="button"
+                className="stw-bot-remove"
+                onClick={() => removeBot(pin, p.id)}
+                aria-label="Retirer le bot"
+              >
+                ✕
+              </button>
+            )}
           </li>
         ))}
       </ul>
 
+      {isHost && (
+        <div className="stw-add-bots">
+          <span className="muted stw-diff-hint">Ajouter un bot :</span>
+          <div className="stw-bot-btns">
+            {BOT_KEYS.map((key) => (
+              <button
+                key={key}
+                type="button"
+                className="btn stw-bot-add"
+                disabled={players.length >= maxPlayers}
+                onClick={() => addBot(pin, key)}
+              >
+                {BOTS[key].emoji} {BOTS[key].label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {tooMany && (
         <p className="error-text">
-          Maximum {MAX_PLAYERS} joueurs (chaque ronde, tout le monde pige
-          dans la même équipe).
+          Maximum {maxPlayers} joueurs en mode {MODES[mode].label} — changez de
+          mode ou retirez des joueurs.
         </p>
       )}
 
