@@ -20,6 +20,16 @@ export const GAMES = [
     accent: '#3b7de2',
     enabled: true,
   },
+  {
+    id: 'spin-the-wheel',
+    name: 'Spin the Wheel',
+    description:
+      'Tournez la roue des 32 équipes NFL et bâtissez le meilleur alignement fantasy.',
+    path: '/spin-the-wheel',
+    emoji: '🏈',
+    accent: '#d50a0a',
+    enabled: true,
+  },
   // Example of a future, not-yet-available game:
   // {
   //   id: 'prochain-jeu',

@@ -45,6 +45,69 @@
           }
         }
       }
+    },
+    "wheelSessions": {
+      "$pin": {
+        ".read": "auth != null",
+        "status": {
+          ".write": "auth != null",
+          ".validate": "newData.isString() && (newData.val() == 'lobby' || newData.val() == 'playing' || newData.val() == 'ended')"
+        },
+        "hostId": {
+          ".write": "auth != null && newData.val() == auth.uid",
+          ".validate": "newData.isString()"
+        },
+        "createdAt": {
+          ".write": "auth != null",
+          ".validate": "newData.isNumber()"
+        },
+        "startedAt": {
+          ".write": "auth != null",
+          ".validate": "newData.isNumber() || newData.val() == null"
+        },
+        "difficulty": {
+          ".write": "auth != null",
+          ".validate": "newData.isString() && (newData.val() == 'easy' || newData.val() == 'medium' || newData.val() == 'hard' || newData.val() == 'extra')"
+        },
+        "order": {
+          ".write": "auth != null",
+          "$i": { ".validate": "newData.isString()" }
+        },
+        "turnIndex": {
+          ".write": "auth != null",
+          ".validate": "newData.isNumber()"
+        },
+        "spin": {
+          ".write": "auth != null",
+          "team": { ".validate": "newData.isString() && newData.val().length <= 4" },
+          "by": { ".validate": "newData.isString()" },
+          "nonce": { ".validate": "newData.isNumber()" },
+          "at": { ".validate": "newData.isNumber()" }
+        },
+        "usedTeams": {
+          "$team": {
+            ".write": "auth != null && !data.exists()",
+            ".validate": "newData.isString()"
+          }
+        },
+        "players": {
+          "$playerId": {
+            ".write": "auth != null && auth.uid == $playerId",
+            "name": { ".validate": "newData.isString() && newData.val().length <= 30" },
+            "joinedAt": { ".validate": "newData.isNumber()" },
+            "roster": {
+              "$slot": {
+                ".validate": "$slot == 'QB' || $slot == 'RB1' || $slot == 'RB2' || $slot == 'WR1' || $slot == 'WR2' || $slot == 'TE' || $slot == 'FLEX'",
+                "id": { ".validate": "newData.isString() && newData.val().length <= 24" },
+                "name": { ".validate": "newData.isString() && newData.val().length <= 60" },
+                "pos": { ".validate": "newData.isString() && newData.val().length <= 4" },
+                "team": { ".validate": "newData.isString() && newData.val().length <= 4" },
+                "bonus": { ".validate": "newData.isBoolean()" }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

@@ -1,8 +1,8 @@
 # Jeux 🎮
 
 A web app that hosts multiple party games. The home screen lists the available
-games as buttons; picking one opens it. Current games: **Fruit Interdit** and
-**Turbo Soccer**.
+games as buttons; picking one opens it. Current games: **Fruit Interdit**,
+**Turbo Soccer** and **Spin the Wheel**.
 
 Built with **React + Vite** and backed by **Firebase Realtime Database** for live,
 cross-device sync (shared leaderboard, timer, code claiming).
@@ -61,6 +61,31 @@ wins; a tie goes to **golden goal** (next goal wins).
 Everything lives in `src/games/soccer-cars/` — `engine.js` (canvas physics +
 rendering, no dependencies) and `SoccerCars.jsx` (menu + screen + touch
 controls).
+
+## Spin the Wheel 🏈
+
+A turn-based NFL fantasy draft on a wheel, using the same PIN/lobby session
+system as Fruit Interdit (Firebase required). Up to **4 players**.
+
+- The host creates a session and picks the **difficulty** in the lobby
+  (Facile / Moyen / Difficile / Extrême).
+- Turn order is random. On your turn you **spin the wheel** of the remaining
+  NFL teams (all 32 at the start; each spun team is removed).
+- From the team you land on, you fill one of your open roster slots — **QB,
+  RB1, RB2, WR1, WR2, TE or FLEX** (FLEX = RB/WR/TE). Two ways to pick:
+  - **Name the player from memory** — if your spelling is close enough for the
+    difficulty (50% / 70% / 85% / 100% of the name), that player scores a
+    **×1.2 bonus** at the end. A miss forces you to pick from the list.
+  - **Pick from the list** (players at that position, from the Sleeper depth
+    chart) — no bonus.
+- When every roster is full, the game pulls each player's **season projection
+  from the Sleeper API** (PPR), applies the ×1.2 bonuses, and the highest
+  projected total wins.
+
+Rosters and projections come from the public [Sleeper API](https://docs.sleeper.com)
+(no key needed). Everything lives in `src/games/spin-the-wheel/`; the realtime
+state is stored under `wheelSessions/$pin` (see `database.rules.json` — deploy
+the rules with `firebase deploy --only database` before the first game).
 
 ## Setup
 

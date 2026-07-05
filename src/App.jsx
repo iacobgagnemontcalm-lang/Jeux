@@ -4,6 +4,7 @@ import { usePlayer } from './auth.jsx';
 import GameSelect from './pages/GameSelect.jsx';
 import FruitInterdit from './games/fruit-interdit/FruitInterdit.jsx';
 import SoccerCars from './games/soccer-cars/SoccerCars.jsx';
+import SpinTheWheel from './games/spin-the-wheel/SpinTheWheel.jsx';
 
 function Notice({ title, children }) {
   return (
@@ -64,6 +65,14 @@ export default function App() {
           }
         />
         <Route path="/soccer-cars" element={<SoccerCars />} />
+        <Route
+          path="/spin-the-wheel/*"
+          element={
+            <RequireFirebase>
+              <SpinTheWheel />
+            </RequireFirebase>
+          }
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
