@@ -96,7 +96,6 @@
         },
         "players": {
           "$playerId": {
-            "// bots": "bot_* nodes are driven by the host, so any authed user may write them",
             ".write": "auth != null && (auth.uid == $playerId || $playerId.beginsWith('bot_'))",
             "name": { ".validate": "newData.isString() && newData.val().length <= 30" },
             "joinedAt": { ".validate": "newData.isNumber()" },
