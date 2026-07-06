@@ -9,6 +9,7 @@ import {
   NAME_BONUS,
   SPIN_MS,
   BOTS,
+  nameBonus,
   openSlots,
 } from './constants.js';
 import { TEAMS, remainingTeams } from './teams.js';
@@ -54,7 +55,7 @@ function RosterBoard({ players, currentUid, meId }) {
                     <span className="stw-slot-pick">
                       <TeamChip abbr={pick.team} />
                       {pick.name}
-                      {pick.bonus && <span className="stw-bonus">×{NAME_BONUS}</span>}
+                      {pick.bonus && <span className="stw-bonus">×{nameBonus(slot)}</span>}
                     </span>
                   ) : (
                     <span className="stw-slot-empty">—</span>
@@ -179,7 +180,7 @@ export default function Game({ pin, session, playerId }) {
     if (m) {
       setFeedback({
         type: 'ok',
-        text: `🎯 ${m.player.name} — bonus ×${NAME_BONUS} !`,
+        text: `🎯 ${m.player.name} — bonus ×${nameBonus(slot)} !`,
       });
       await pick(m.player, true);
     } else {
@@ -319,6 +320,9 @@ export default function Game({ pin, session, playerId }) {
                 }}
               >
                 {s}
+                {nameBonus(s) > NAME_BONUS && (
+                  <span className="stw-slot-btn__bonus">×{nameBonus(s)}</span>
+                )}
               </button>
             ))}
           </div>
@@ -348,7 +352,7 @@ export default function Game({ pin, session, playerId }) {
                     className="stw-guess__input"
                     type="text"
                     autoComplete="off"
-                    placeholder="Nom du joueur (bonus ×1.2)"
+                    placeholder={`Nom du joueur (bonus ×${nameBonus(slot)})`}
                     value={guess}
                     onChange={(e) => setGuess(e.target.value)}
                     onFocus={() => setMode('guess')}

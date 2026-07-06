@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toPlayerList } from './session.js';
-import { SLOTS, NAME_BONUS, RANK_BONUS } from './constants.js';
+import { SLOTS, RANK_BONUS, nameBonus } from './constants.js';
 import { TEAMS } from './teams.js';
 import { fetchProjection } from './sleeper.js';
 
@@ -58,11 +58,12 @@ export default function Results({ session, playerId }) {
     if (!proj) return null;
 
     // Points of a pick before the head-to-head rank bonus: the Sleeper
-    // projection, ×1.2 if the player was named from memory.
-    const pickPoints = (pick) => {
+    // projection, times the slot's name bonus if the player was named from
+    // memory (×1.2, or ×1.3 at RB1/WR1).
+    const pickPoints = (pick, slot) => {
       if (!pick) return 0;
       const base = proj[pick.id] || 0;
-      return pick.bonus ? base * NAME_BONUS : base;
+      return pick.bonus ? base * nameBonus(slot) : base;
     };
 
     // Head-to-head bonus: at each slot, rank the players by that pick's points
@@ -73,7 +74,7 @@ export default function Results({ session, playerId }) {
       rankMult[slot] = {};
       const owned = players
         .filter((p) => p.roster?.[slot])
-        .map((p) => ({ id: p.id, pts: pickPoints(p.roster[slot]) }))
+        .map((p) => ({ id: p.id, pts: pickPoints(p.roster[slot], slot) }))
         .sort((a, b) => b.pts - a.pts);
       let rank = 0;
       owned.forEach((o, i) => {
@@ -88,7 +89,7 @@ export default function Results({ session, playerId }) {
           const pick = p.roster?.[slot];
           if (!pick) return { slot, pick: null, points: 0 };
           const base = proj[pick.id] || 0;
-          const named = pick.bonus ? base * NAME_BONUS : base;
+          const named = pick.bonus ? base * nameBonus(slot) : base;
           const rankMultiplier = rankMult[slot][p.id] || 1;
           return {
             slot,
@@ -159,7 +160,7 @@ export default function Results({ session, playerId }) {
                           <TeamChip abbr={pick.team} />
                           {pick.name}
                           {pick.bonus && (
-                            <span className="stw-bonus">×{NAME_BONUS}</span>
+                            <span className="stw-bonus">×{nameBonus(slot)}</span>
                           )}
                           {rankMultiplier > 1 && (
                             <span className="stw-rank-bonus">

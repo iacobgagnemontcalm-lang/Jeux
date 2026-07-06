@@ -18,6 +18,7 @@ import {
   BOTS,
   BOT_KEYS,
   NAME_BONUS,
+  nameBonus,
 } from './constants.js';
 
 export default function Lobby({ pin, session, playerId }) {
@@ -72,7 +73,7 @@ export default function Lobby({ pin, session, playerId }) {
         <h2>Difficulté</h2>
         <p className="muted stw-diff-hint">
           Précision du nom exigée pour le bonus ×{NAME_BONUS} quand on nomme un
-          joueur de mémoire.
+          joueur de mémoire (×{nameBonus('RB1')} sur RB1 et WR1).
         </p>
         <div className="stw-diff-grid">
           {DIFFICULTY_KEYS.map((key) => (

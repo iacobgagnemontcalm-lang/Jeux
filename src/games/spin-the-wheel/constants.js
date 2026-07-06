@@ -60,8 +60,13 @@ export const MODE_KEYS = ['shared', 'solo'];
 export const DEFAULT_MODE = 'shared';
 
 // Bonus multiplier applied to a player's projection when he was picked by
-// typing his name (instead of choosing from the list).
+// typing his name (instead of choosing from the list). The premium skill
+// slots RB1 and WR1 pay more.
 export const NAME_BONUS = 1.2;
+export const NAME_BONUS_SLOTS = { RB1: 1.3, WR1: 1.3 };
+export function nameBonus(slot) {
+  return NAME_BONUS_SLOTS[slot] ?? NAME_BONUS;
+}
 
 // Difficulty controls how close a typed name must be to count as correct.
 // `threshold` is a 0..1 similarity score (see match.js). At 'extra' the

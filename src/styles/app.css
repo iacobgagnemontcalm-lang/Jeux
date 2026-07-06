@@ -886,6 +886,16 @@ body {
   border-color: #d50a0a;
   background: rgba(213, 10, 10, 0.25);
 }
+.stw-slot-btn__bonus {
+  margin-left: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffe08a;
+  background: rgba(213, 148, 10, 0.35);
+  border-radius: 999px;
+  padding: 1px 5px;
+  vertical-align: middle;
+}
 .stw-guess {
   display: flex;
   gap: 10px;

@@ -83,14 +83,15 @@ system as Fruit Interdit (Firebase required). Up to **4 players**.
   defenses included — can be drafted only once. Two ways to pick:
   - **Name the player from memory** — if your spelling is close enough for the
     difficulty (50% / 70% / 85% / 100% of the name), that player scores a
-    **×1.2 bonus** at the end. A miss forces you to pick from the list.
+    **×1.2 bonus** at the end (**×1.3** on the premium RB1 and WR1 slots).
+    A miss forces you to pick from the list.
   - **Pick from the list** (players at that position, from the Sleeper depth
     chart) — no bonus.
 - When every roster is full, the game pulls each player's **season projection
-  from the Sleeper API** (PPR). Two bonuses stack on top: the ×1.2 name bonus,
-  and a **head-to-head slot bonus** — at each slot the player with the best
-  projection scores ×1.2, the runner-up ×1.1, everyone else ×1.0. Highest total
-  wins.
+  from the Sleeper API** (PPR). Two bonuses stack on top: the name bonus
+  (×1.2, or ×1.3 at RB1/WR1), and a **head-to-head slot bonus** — at each slot
+  the player with the best projection scores ×1.2, the runner-up ×1.1,
+  everyone else ×1.0. Highest total wins.
 - **Bots** are driven by the host's device. Experts scout the Sleeper
   projections and always draft the best available player; Connaisseurs scout
   too but pick one of the top three; Recrues pick at random. Bots also "name"
