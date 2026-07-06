@@ -19,8 +19,10 @@ export const SLOT_POSITIONS = {
 
 export const POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
 
-// Every NFL player — kickers and defenses included — can be drafted by only
-// one player per game (in shared mode, only one per round-team).
+// Every NFL skill player can be drafted by only one player per game (in
+// shared mode, only one per round-team). Kickers and defenses are exempt:
+// teams carry a single DEF and usually one K, so those may be drafted by
+// several players (see takenIds in Game.jsx).
 
 // Bonus multiplier applied to a slot by finishing position projection: the
 // player with the best projection at a given slot gets ×1.2, second ×1.1,

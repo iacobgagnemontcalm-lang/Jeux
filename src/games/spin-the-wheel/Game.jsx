@@ -89,12 +89,16 @@ export default function Game({ pin, session, playerId }) {
   // NFL players already off-limits for this pick. A player can be drafted only
   // once ever, so in solo mode nobody on the spun team may already be owned; in
   // shared mode teams never repeat, so any roster entry on the spun team was
-  // taken earlier this same round.
+  // taken earlier this same round. Kickers and defenses are exempt — a team
+  // carries a single DEF and usually one K, so those can be drafted by
+  // several players.
   const takenIds = new Set();
   if (spin) {
     players.forEach((p) =>
       Object.values(p.roster || {}).forEach((pk) => {
-        if (pk.team === spin.team) takenIds.add(pk.id);
+        if (pk.team === spin.team && pk.pos !== 'K' && pk.pos !== 'DEF') {
+          takenIds.add(pk.id);
+        }
       }),
     );
   }

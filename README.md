@@ -79,8 +79,9 @@ system as Fruit Interdit (Firebase required). Up to **4 players**.
   - **Chacun son équipe** (max 3): on your turn you spin and the team is yours
     alone — pick one player, then it's the next player's turn.
 - Each pick fills one of your open roster slots — **QB, RB1, RB2, WR1, WR2,
-  TE, FLEX, K or DEF** (FLEX = RB/WR/TE). Every NFL player — kickers and
-  defenses included — can be drafted only once. Two ways to pick:
+  TE, FLEX, K or DEF** (FLEX = RB/WR/TE). Every NFL skill player can be
+  drafted only once — except **kickers and defenses**, which several players
+  may draft (a team only carries one DEF and usually one K). Two ways to pick:
   - **Name the player from memory** — if your spelling is close enough for the
     difficulty (50% / 70% / 85% / 100% of the name), that player scores a
     **×1.2 bonus** at the end (**×1.3** on the premium RB1 and WR1 slots).
