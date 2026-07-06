@@ -8,6 +8,7 @@ import {
   SLOT_POSITIONS,
   NAME_BONUS,
   SPIN_MS,
+  BOTS,
   openSlots,
 } from './constants.js';
 import { TEAMS, remainingTeams } from './teams.js';
@@ -224,20 +225,20 @@ export default function Game({ pin, session, playerId }) {
     if (botActRef.current === sig) return undefined;
     const t = setTimeout(() => {
       botActRef.current = sig;
-      const choice = botChoose(
-        level,
-        openSlots(currentPlayer),
-        rosters,
-        spin.team,
-        takenIds,
-      );
-      if (!choice) return; // no legal pick (extremely rare); wait it out
-      commitPick(pin, currentUid, session, {
-        slot: choice.slot,
-        player: choice.player,
-        team: spin.team,
-        bonus: false,
-      }).catch(() => {});
+      botChoose(level, openSlots(currentPlayer), rosters, spin.team, takenIds)
+        .then((choice) => {
+          if (!choice) return undefined; // no legal pick (extremely rare); wait it out
+          // Bots "name" their pick from memory at their level's rate, earning
+          // the ×NAME_BONUS exactly like a human who types the name right.
+          const bonus = Math.random() < (BOTS[level]?.nameRate ?? 0);
+          return commitPick(pin, currentUid, session, {
+            slot: choice.slot,
+            player: choice.player,
+            team: spin.team,
+            bonus,
+          });
+        })
+        .catch(() => {});
     }, 700);
     return () => clearTimeout(t);
   }, [

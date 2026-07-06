@@ -28,11 +28,13 @@ export const POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
 export const RANK_BONUS = [1.2, 1.1];
 
 // Bots the host can add in the lobby. `skill` biases how good a pick they
-// make from the available players (see botChoose in bot.js).
+// make from the available players (see botChoose in bot.js); `nameRate` is
+// their chance of "naming" a pick from memory, earning NAME_BONUS like a
+// human who types the name right.
 export const BOTS = {
-  noob: { label: 'Recrue', emoji: '🤖', skill: 0 },
-  connaisseur: { label: 'Connaisseur', emoji: '🤖', skill: 0.5 },
-  expert: { label: 'Expert', emoji: '🤖', skill: 1 },
+  noob: { label: 'Recrue', emoji: '🤖', skill: 0, nameRate: 0.15 },
+  connaisseur: { label: 'Connaisseur', emoji: '🤖', skill: 0.5, nameRate: 0.5 },
+  expert: { label: 'Expert', emoji: '🤖', skill: 1, nameRate: 0.9 },
 };
 export const BOT_KEYS = ['noob', 'connaisseur', 'expert'];
 

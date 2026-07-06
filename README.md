@@ -91,9 +91,11 @@ system as Fruit Interdit (Firebase required). Up to **4 players**.
   and a **head-to-head slot bonus** — at each slot the player with the best
   projection scores ×1.2, the runner-up ×1.1, everyone else ×1.0. Highest total
   wins.
-- **Bots** are driven by the host's device. Expert bots draft the best
-  available starter, Connaisseurs pick from the top of the depth chart, and
-  Recrues pick at random.
+- **Bots** are driven by the host's device. Experts scout the Sleeper
+  projections and always draft the best available player; Connaisseurs scout
+  too but pick one of the top three; Recrues pick at random. Bots also "name"
+  their pick from memory — earning the ×1.2 name bonus — at a rate matching
+  their level (Recrue 15%, Connaisseur 50%, Expert 90%).
 
 Rosters and projections come from the public [Sleeper API](https://docs.sleeper.com)
 (no key needed). Everything lives in `src/games/spin-the-wheel/`; the realtime
