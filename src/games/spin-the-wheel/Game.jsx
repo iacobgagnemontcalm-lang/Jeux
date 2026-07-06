@@ -320,9 +320,6 @@ export default function Game({ pin, session, playerId }) {
                 }}
               >
                 {s}
-                {nameBonus(s) > NAME_BONUS && (
-                  <span className="stw-slot-btn__bonus">×{nameBonus(s)}</span>
-                )}
               </button>
             ))}
           </div>
