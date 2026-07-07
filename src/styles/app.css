@@ -886,6 +886,23 @@ body {
   border-color: #d50a0a;
   background: rgba(213, 10, 10, 0.25);
 }
+/* Expert shot clock */
+.stw-timer {
+  float: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+.stw-timer.is-low {
+  color: #fff;
+  background: #d50a0a;
+  border-color: #d50a0a;
+}
 .stw-guess {
   display: flex;
   gap: 10px;

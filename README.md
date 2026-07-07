@@ -68,8 +68,8 @@ A turn-based NFL fantasy draft on a wheel, using the same PIN/lobby session
 system as Fruit Interdit (Firebase required). Up to **4 players**.
 
 - The host creates a session and picks, in the lobby, the **mode**, the
-  **difficulty** (Facile / Moyen / Difficile / Extrême) and optionally adds
-  **bots** to play against (Recrue / Connaisseur / Expert).
+  **difficulty** (Facile / Moyen / Difficile / Extrême / Expert) and optionally
+  adds **bots** to play against (Recrue / Connaisseur / Expert).
 - **Two modes:**
   - **Équipe partagée** (max 4): the game runs in **9 rounds** (one per roster
     slot). Each round one player — the *spinner* — **spins the wheel** of the
@@ -83,9 +83,12 @@ system as Fruit Interdit (Firebase required). Up to **4 players**.
   drafted only once — except **kickers and defenses**, which several players
   may draft (a team only carries one DEF and usually one K). Two ways to pick:
   - **Name the player from memory** — if your spelling is close enough for the
-    difficulty (50% / 70% / 85% / 100% of the name), that player scores a
-    **×1.2 bonus** at the end (**×1.3** on the premium RB1 and WR1 slots).
-    A miss forces you to pick from the list.
+    difficulty (50% / 70% / 85% / 100% / 100% of the name), that player scores
+    a **×1.2 bonus** at the end (**×1.3** on the premium RB1 and WR1 slots).
+    A miss forces you to pick from the list. At **Expert**, the perfect name
+    must also be typed within **10 seconds** of the input appearing, with **no
+    erasing** (every character is final) — when time runs out you default to
+    the list.
   - **Pick from the list** (players at that position, from the Sleeper depth
     chart) — no bonus.
 - When every roster is full, the game pulls each player's **season projection

@@ -67,7 +67,7 @@
         },
         "difficulty": {
           ".write": "auth != null",
-          ".validate": "newData.isString() && (newData.val() == 'easy' || newData.val() == 'medium' || newData.val() == 'hard' || newData.val() == 'extra')"
+          ".validate": "newData.isString() && (newData.val() == 'easy' || newData.val() == 'medium' || newData.val() == 'hard' || newData.val() == 'extra' || newData.val() == 'expert')"
         },
         "mode": {
           ".write": "auth != null",

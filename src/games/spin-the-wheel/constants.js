@@ -71,15 +71,25 @@ export function nameBonus(slot) {
 }
 
 // Difficulty controls how close a typed name must be to count as correct.
-// `threshold` is a 0..1 similarity score (see match.js). At 'extra' the
-// (normalized) full name must be perfect.
+// `threshold` is a 0..1 similarity score (see match.js). From 'extra' up the
+// (normalized) full name must be perfect. 'expert' adds a shot clock:
+// `guessTimerMs` to type the name from the moment the input appears, and
+// `noDelete` makes every character final (no backspace) — running out of time
+// forfeits the guess to the list (no bonus).
 export const DIFFICULTIES = {
   easy: { label: 'Facile', threshold: 0.5, hint: '50 % du nom suffit' },
   medium: { label: 'Moyen', threshold: 0.7, hint: '70 % du nom' },
   hard: { label: 'Difficile', threshold: 0.85, hint: '85 % du nom' },
   extra: { label: 'Extrême', threshold: 1, hint: 'Nom complet parfait' },
+  expert: {
+    label: 'Expert',
+    threshold: 1,
+    hint: 'Nom parfait · 10 s · sans effacer',
+    guessTimerMs: 10000,
+    noDelete: true,
+  },
 };
-export const DIFFICULTY_KEYS = ['easy', 'medium', 'hard', 'extra'];
+export const DIFFICULTY_KEYS = ['easy', 'medium', 'hard', 'extra', 'expert'];
 export const DEFAULT_DIFFICULTY = 'medium';
 
 // How long the wheel animation runs on every screen (ms).
