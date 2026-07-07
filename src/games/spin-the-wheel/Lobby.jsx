@@ -20,6 +20,7 @@ import {
   NAME_BONUS,
   nameBonus,
 } from './constants.js';
+import { useBestScores, bestFor } from './records.js';
 
 export default function Lobby({ pin, session, playerId }) {
   const [busy, setBusy] = useState(false);
@@ -27,6 +28,7 @@ export default function Lobby({ pin, session, playerId }) {
   const players = toPlayerList(session);
   const difficulty = session.difficulty || DEFAULT_DIFFICULTY;
   const mode = session.mode || DEFAULT_MODE;
+  const bests = useBestScores();
   const maxPlayers = MODES[mode].maxPlayers;
   const tooMany = players.length > maxPlayers;
 
@@ -101,6 +103,11 @@ export default function Lobby({ pin, session, playerId }) {
         {players.map((p) => (
           <li key={p.id} className={p.id === playerId ? 'is-me' : ''}>
             {p.name}
+            {!p.bot && bestFor(bests, p.name) && (
+              <span className="stw-best">
+                🏅 {bestFor(bests, p.name).score.toFixed(1)} pts
+              </span>
+            )}
             {p.id === session.hostId && <span className="tag">Hôte</span>}
             {p.bot && <span className="tag stw-tag-bot">Bot</span>}
             {isHost && p.bot && (

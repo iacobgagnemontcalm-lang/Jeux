@@ -42,7 +42,9 @@ never against the production database.
 - **HashRouter**: routes live behind `/#/` — use
   `http://127.0.0.1:5173/#/spin-the-wheel`, not `/spin-the-wheel` (that lands
   on the game-select page).
-- **Sleeper API**: Spin the Wheel fetches `https://api.sleeper.app/v1/players/nfl`
+- **Sleeper API**: the Results screen also fetches
+  `https://api.sleeper.app/projections/nfl/player/<id>?...` per picked player —
+  stub with `{ "stats": { "pts_ppr": 100 } }`. Spin the Wheel fetches `https://api.sleeper.app/v1/players/nfl`
   (~10 MB, external). Stub it with `page.route` returning a small fixture — one
   set of players per team (fields: `team`, `position`, `status: 'Active'`,
   `full_name`, `depth_chart_order`, `search_rank`); team DEF entries are keyed

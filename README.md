@@ -96,6 +96,10 @@ system as Fruit Interdit (Firebase required). Up to **4 players**.
   (×1.2, or ×1.3 at RB1/WR1), and a **head-to-head slot bonus** — at each slot
   the player with the best projection scores ×1.2, the runner-up ×1.1,
   everyone else ×1.0. Highest total wins.
+- **Personal bests**: each player's highest total ever is stored under their
+  name (`wheelBests` in the database — accents and capitalization ignored, so
+  Kévin/kevin share one record). The lobby shows a 🏅 next to players who hold
+  a record, and the results screen celebrates a new personal best.
 - **Bots** are driven by the host's device. Experts scout the Sleeper
   projections and always draft the best available player; Connaisseurs scout
   too but pick one of the top three; Recrues pick at random. Bots also "name"

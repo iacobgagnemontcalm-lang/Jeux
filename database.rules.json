@@ -113,6 +113,17 @@
           }
         }
       }
+    },
+    "wheelBests": {
+      ".read": "auth != null",
+      "$nameKey": {
+        ".write": "auth != null && (!data.exists() || newData.child('score').val() > data.child('score').val())",
+        ".validate": "newData.hasChildren(['name', 'score', 'at'])",
+        "name": { ".validate": "newData.isString() && newData.val().length <= 30" },
+        "score": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "at": { ".validate": "newData.isNumber()" },
+        "$other": { ".validate": false }
+      }
     }
   }
 }
