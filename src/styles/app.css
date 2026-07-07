@@ -905,7 +905,7 @@ body {
 
 /* Expert shot clock */
 .stw-timer {
-  float: right;
+  margin-left: auto;
   font-variant-numeric: tabular-nums;
   font-weight: 800;
   font-size: 14px;

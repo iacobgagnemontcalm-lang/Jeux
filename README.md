@@ -85,10 +85,10 @@ system as Fruit Interdit (Firebase required). Up to **4 players**.
   - **Name the player from memory** — if your spelling is close enough for the
     difficulty (50% / 70% / 85% / 100% / 100% of the name), that player scores
     a **×1.2 bonus** at the end (**×1.3** on the premium RB1 and WR1 slots).
-    A miss forces you to pick from the list. At **Expert**, the perfect name
-    must also be typed within **10 seconds** of the input appearing, with **no
-    erasing** (every character is final) — when time runs out you default to
-    the list.
+    A miss forces you to pick from the list. At **Expert**, a **10-second**
+    clock starts as soon as the wheel settles on your pick — choosing the slot
+    and typing the perfect name must both fit inside it, with **no erasing**
+    (every character is final). When time runs out you default to the list.
   - **Pick from the list** (players at that position, from the Sleeper depth
     chart) — no bonus.
 - When every roster is full, the game pulls each player's **season projection

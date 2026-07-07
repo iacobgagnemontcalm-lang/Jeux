@@ -73,9 +73,10 @@ export function nameBonus(slot) {
 // Difficulty controls how close a typed name must be to count as correct.
 // `threshold` is a 0..1 similarity score (see match.js). From 'extra' up the
 // (normalized) full name must be perfect. 'expert' adds a shot clock:
-// `guessTimerMs` to type the name from the moment the input appears, and
-// `noDelete` makes every character final (no backspace) — running out of time
-// forfeits the guess to the list (no bonus).
+// `guessTimerMs` for the whole pick, counting from the moment the wheel
+// settles on your turn (slot choice included), and `noDelete` makes every
+// character final (no backspace) — running out of time forfeits the guess
+// to the list (no bonus).
 export const DIFFICULTIES = {
   easy: { label: 'Facile', threshold: 0.5, hint: '50 % du nom suffit' },
   medium: { label: 'Moyen', threshold: 0.7, hint: '70 % du nom' },
