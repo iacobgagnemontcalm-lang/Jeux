@@ -126,6 +126,8 @@ export default function Game({ pin, session, playerId }) {
   const [guess, setGuess] = useState('');
   const [guessFailed, setGuessFailed] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [guessDeadline, setGuessDeadline] = useState(null);
+  const [timeLeftMs, setTimeLeftMs] = useState(null);
 
   // New spin (or new turn): reset the pick panel.
   useEffect(() => {
@@ -134,6 +136,8 @@ export default function Game({ pin, session, playerId }) {
     setGuess('');
     setGuessFailed(false);
     setFeedback(null);
+    setGuessDeadline(null);
+    setTimeLeftMs(null);
   }, [spin?.nonce, turnIndex]);
 
   const settled = Boolean(spin) && settledNonce === spin.nonce;
@@ -148,6 +152,39 @@ export default function Game({ pin, session, playerId }) {
       : [];
   const candidates = allEligible.filter((c) => !takenIds.has(c.id));
   const takenCandidates = allEligible.filter((c) => takenIds.has(c.id));
+
+  // Expert shot clock: the countdown starts the moment the name input first
+  // appears for this spin and does NOT re-arm when the player switches slots.
+  // Running out of time forfeits the guess to the list (no bonus).
+  const guessTimerMs = difficulty.guessTimerMs || 0;
+  const guessOpen =
+    myPickPhase && Boolean(slot) && Boolean(rosters) && !guessFailed;
+  useEffect(() => {
+    if (!guessTimerMs || !guessOpen || guessDeadline) return;
+    setGuessDeadline(Date.now() + guessTimerMs);
+    setTimeLeftMs(guessTimerMs);
+  }, [guessTimerMs, guessOpen, guessDeadline]);
+
+  // Tick the clock; paused while a pick is committing (busy) so a guess
+  // submitted at the buzzer isn't clobbered by the timeout.
+  useEffect(() => {
+    if (!guessDeadline || guessFailed || busy) return undefined;
+    const id = setInterval(() => {
+      const left = guessDeadline - Date.now();
+      if (left > 0) {
+        setTimeLeftMs(left);
+        return;
+      }
+      setTimeLeftMs(0);
+      setGuessFailed(true);
+      setMode('list');
+      setFeedback({
+        type: 'err',
+        text: '⏱ Temps écoulé ! Choisissez dans la liste (sans bonus).',
+      });
+    }, 100);
+    return () => clearInterval(id);
+  }, [guessDeadline, guessFailed, busy]);
 
   const handleSpin = async () => {
     if (busy || !remaining.length) return;
@@ -346,7 +383,22 @@ export default function Game({ pin, session, playerId }) {
 
           {slot && rosters && (
             <>
-              <h3>2. Nommez un joueur ({positions.join(' / ')})</h3>
+              <h3>
+                2. Nommez un joueur ({positions.join(' / ')})
+                {guessTimerMs > 0 && !guessFailed && timeLeftMs != null && (
+                  <span
+                    className={`stw-timer${timeLeftMs <= 3000 ? ' is-low' : ''}`}
+                  >
+                    ⏱ {Math.ceil(timeLeftMs / 1000)} s
+                  </span>
+                )}
+              </h3>
+              {difficulty.noDelete && !guessFailed && (
+                <p className="muted stw-diff-hint">
+                  Mode Expert : chaque lettre est définitive — impossible
+                  d'effacer.
+                </p>
+              )}
               {!guessFailed && (
                 <form className="stw-guess" onSubmit={handleGuess}>
                   <input
@@ -355,7 +407,21 @@ export default function Game({ pin, session, playerId }) {
                     autoComplete="off"
                     placeholder={`Nom du joueur (bonus ×${nameBonus(slot)})`}
                     value={guess}
-                    onChange={(e) => setGuess(e.target.value)}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      // Expert: characters are final — refuse any edit that
+                      // erases or rewrites what's already typed.
+                      if (difficulty.noDelete && !v.startsWith(guess)) return;
+                      setGuess(v);
+                    }}
+                    onKeyDown={(e) => {
+                      if (
+                        difficulty.noDelete &&
+                        (e.key === 'Backspace' || e.key === 'Delete')
+                      ) {
+                        e.preventDefault();
+                      }
+                    }}
                     onFocus={() => setMode('guess')}
                   />
                   <button
