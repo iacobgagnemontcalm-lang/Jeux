@@ -886,9 +886,26 @@ body {
   border-color: #d50a0a;
   background: rgba(213, 10, 10, 0.25);
 }
+/* Personal best scores */
+.stw-best {
+  margin-left: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.stw-record {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.stw-record--new {
+  color: #ffd166;
+  font-weight: 700;
+}
+
 /* Expert shot clock */
 .stw-timer {
-  float: right;
+  margin-left: auto;
   font-variant-numeric: tabular-nums;
   font-weight: 800;
   font-size: 14px;

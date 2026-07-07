@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toPlayerList } from './session.js';
 import { SLOTS, RANK_BONUS, nameBonus } from './constants.js';
 import { TEAMS } from './teams.js';
 import { fetchProjection } from './sleeper.js';
+import { recordBestScore, useBestScores, bestFor } from './records.js';
 
 function TeamChip({ abbr }) {
   const team = TEAMS[abbr];
@@ -107,6 +108,20 @@ export default function Results({ session, playerId }) {
 
   const winner = scored?.[0];
 
+  // Personal best scores (per player name). Each human records their own
+  // total once the projections are in; the write is best-effort and the
+  // database only accepts improvements.
+  const bests = useBestScores();
+  const [myRecord, setMyRecord] = useState(null);
+  const recordedRef = useRef(false);
+  useEffect(() => {
+    if (!scored || recordedRef.current) return;
+    const me = scored.find((p) => p.id === playerId);
+    if (!me || me.bot) return;
+    recordedRef.current = true;
+    recordBestScore(me.name, me.total).then((r) => r && setMyRecord(r));
+  }, [scored, playerId]);
+
   return (
     <div className="screen results stw-results">
       <h1 className="results__title">Terminé !</h1>
@@ -137,10 +152,14 @@ export default function Results({ session, playerId }) {
       )}
 
       {scored &&
-        scored.map((p, rank) => (
+        scored.map((p, rank) => {
+          const isMe = p.id === playerId;
+          const newRecord = isMe && myRecord?.improved;
+          const best = p.bot ? null : bestFor(bests, p.name);
+          return (
           <div
             key={p.id}
-            className={`stw-result-card${p.id === playerId ? ' is-me' : ''}`}
+            className={`stw-result-card${isMe ? ' is-me' : ''}`}
           >
             <div className="stw-result-card__head">
               <span className="stw-result-card__rank">#{rank + 1}</span>
@@ -149,6 +168,18 @@ export default function Results({ session, playerId }) {
                 {p.total.toFixed(1)} pts
               </span>
             </div>
+            {newRecord ? (
+              <div className="stw-record stw-record--new">
+                🎉 Nouveau record personnel : {myRecord.best.toFixed(1)} pts
+                {myRecord.prev != null && ` (ancien : ${myRecord.prev.toFixed(1)})`}
+              </div>
+            ) : (
+              best && (
+                <div className="stw-record">
+                  🏅 Record de {best.name} : {best.score.toFixed(1)} pts
+                </div>
+              )
+            )}
             <table className="stw-result-table">
               <tbody>
                 {p.rows.map(({ slot, pick, base, points, rankMultiplier }) => (
@@ -193,7 +224,8 @@ export default function Results({ session, playerId }) {
               </tbody>
             </table>
           </div>
-        ))}
+          );
+        })}
 
       <Link to="/" className="btn btn--big">Retour aux jeux</Link>
     </div>

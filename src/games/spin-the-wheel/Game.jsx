@@ -153,12 +153,12 @@ export default function Game({ pin, session, playerId }) {
   const candidates = allEligible.filter((c) => !takenIds.has(c.id));
   const takenCandidates = allEligible.filter((c) => takenIds.has(c.id));
 
-  // Expert shot clock: the countdown starts the moment the name input first
-  // appears for this spin and does NOT re-arm when the player switches slots.
-  // Running out of time forfeits the guess to the list (no bonus).
+  // Expert shot clock: the countdown starts the moment the pick phase opens
+  // (wheel settled on your turn, rosters ready) — choosing a slot eats into
+  // the same 10 seconds and switching slots does not re-arm it. Running out
+  // of time forfeits the guess to the list (no bonus).
   const guessTimerMs = difficulty.guessTimerMs || 0;
-  const guessOpen =
-    myPickPhase && Boolean(slot) && Boolean(rosters) && !guessFailed;
+  const guessOpen = myPickPhase && Boolean(rosters) && !guessFailed;
   useEffect(() => {
     if (!guessTimerMs || !guessOpen || guessDeadline) return;
     setGuessDeadline(Date.now() + guessTimerMs);
@@ -345,6 +345,13 @@ export default function Game({ pin, session, playerId }) {
           <div className="stw-pick__team">
             <TeamChip abbr={spin.team} />
             <strong>{TEAMS[spin.team]?.name}</strong>
+            {guessTimerMs > 0 && !guessFailed && timeLeftMs != null && (
+              <span
+                className={`stw-timer${timeLeftMs <= 3000 ? ' is-low' : ''}`}
+              >
+                ⏱ {Math.ceil(timeLeftMs / 1000)} s
+              </span>
+            )}
           </div>
 
           <h3>1. Choisissez la case à remplir</h3>
@@ -365,6 +372,12 @@ export default function Game({ pin, session, playerId }) {
             ))}
           </div>
 
+          {!slot && feedback && (
+            <p className={`feedback feedback--${feedback.type}`}>
+              {feedback.text}
+            </p>
+          )}
+
           {slot && rosterError && (
             <p className="error-text">
               Impossible de charger les effectifs NFL.{' '}
@@ -383,16 +396,7 @@ export default function Game({ pin, session, playerId }) {
 
           {slot && rosters && (
             <>
-              <h3>
-                2. Nommez un joueur ({positions.join(' / ')})
-                {guessTimerMs > 0 && !guessFailed && timeLeftMs != null && (
-                  <span
-                    className={`stw-timer${timeLeftMs <= 3000 ? ' is-low' : ''}`}
-                  >
-                    ⏱ {Math.ceil(timeLeftMs / 1000)} s
-                  </span>
-                )}
-              </h3>
+              <h3>2. Nommez un joueur ({positions.join(' / ')})</h3>
               {difficulty.noDelete && !guessFailed && (
                 <p className="muted stw-diff-hint">
                   Mode Expert : chaque lettre est définitive — impossible

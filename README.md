@@ -85,10 +85,10 @@ system as Fruit Interdit (Firebase required). Up to **4 players**.
   - **Name the player from memory** — if your spelling is close enough for the
     difficulty (50% / 70% / 85% / 100% / 100% of the name), that player scores
     a **×1.2 bonus** at the end (**×1.3** on the premium RB1 and WR1 slots).
-    A miss forces you to pick from the list. At **Expert**, the perfect name
-    must also be typed within **10 seconds** of the input appearing, with **no
-    erasing** (every character is final) — when time runs out you default to
-    the list.
+    A miss forces you to pick from the list. At **Expert**, a **10-second**
+    clock starts as soon as the wheel settles on your pick — choosing the slot
+    and typing the perfect name must both fit inside it, with **no erasing**
+    (every character is final). When time runs out you default to the list.
   - **Pick from the list** (players at that position, from the Sleeper depth
     chart) — no bonus.
 - When every roster is full, the game pulls each player's **season projection
@@ -96,6 +96,10 @@ system as Fruit Interdit (Firebase required). Up to **4 players**.
   (×1.2, or ×1.3 at RB1/WR1), and a **head-to-head slot bonus** — at each slot
   the player with the best projection scores ×1.2, the runner-up ×1.1,
   everyone else ×1.0. Highest total wins.
+- **Personal bests**: each player's highest total ever is stored under their
+  name (`wheelBests` in the database — accents and capitalization ignored, so
+  Kévin/kevin share one record). The lobby shows a 🏅 next to players who hold
+  a record, and the results screen celebrates a new personal best.
 - **Bots** are driven by the host's device. Experts scout the Sleeper
   projections and always draft the best available player; Connaisseurs scout
   too but pick one of the top three; Recrues pick at random. Bots also "name"
