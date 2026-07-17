@@ -72,7 +72,9 @@ export default function Entry() {
       <p className="muted">
         Tournez la roue des 32 équipes NFL et bâtissez votre alignement
         fantasy : QB, RB1, RB2, WR1, WR2, TE, FLEX, K et DEF. Deux modes,
-        difficulté réglable et bots à affronter.
+        difficulté réglable, bots à affronter — et une époque Historique où
+        une roue des années s'ajoute et où comptent les vrais points d'une
+        saison passée.
       </p>
 
       <label className="field">

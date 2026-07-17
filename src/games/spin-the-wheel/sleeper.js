@@ -13,7 +13,7 @@ const PROJ_TTL_MS = 6 * 60 * 60 * 1000;
 // points anyway). Teams carry a single DEF and usually one kicker.
 const MAX_PER_POSITION = { QB: 4, RB: 8, WR: 10, TE: 6, K: 2, DEF: 1 };
 
-function readCache(key, ttl) {
+export function readCache(key, ttl) {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
@@ -25,7 +25,7 @@ function readCache(key, ttl) {
   }
 }
 
-function writeCache(key, data) {
+export function writeCache(key, data) {
   try {
     localStorage.setItem(key, JSON.stringify({ at: Date.now(), data }));
   } catch {
@@ -95,7 +95,7 @@ export function currentSeason() {
   return now.getMonth() >= 2 ? now.getFullYear() : now.getFullYear() - 1;
 }
 
-function pickPoints(stats) {
+export function pickPoints(stats) {
   if (!stats) return null;
   const pts = stats.pts_ppr ?? stats.pts_half_ppr ?? stats.pts_std;
   return typeof pts === 'number' ? pts : null;

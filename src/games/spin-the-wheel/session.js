@@ -81,6 +81,20 @@ export async function setMode(pin, mode) {
   await update(ref(db, `${BASE}/${pin}`), { mode });
 }
 
+// Host picks the era in the lobby (see ERAS in constants.js).
+export async function setEra(pin, era) {
+  await update(ref(db, `${BASE}/${pin}`), { era });
+}
+
+// Host picks the historical year range; stored ordered so every client
+// derives the same year wheel (historyRange re-clamps on read anyway).
+export async function setYearRange(pin, yearFrom, yearTo) {
+  await update(ref(db, `${BASE}/${pin}`), {
+    yearFrom: Math.min(yearFrom, yearTo),
+    yearTo: Math.max(yearFrom, yearTo),
+  });
+}
+
 // Host adds a bot player (its own node keyed by a bot_ id; the database rules
 // let any authed user write bot_* nodes so the host can drive them).
 export async function addBot(pin, level) {
@@ -140,12 +154,14 @@ export async function startSession(pin, playerIds) {
   });
 }
 
-// The current player spins: every client animates the wheel toward the same
-// team. `nonce` distinguishes consecutive spins.
-export async function writeSpin(pin, playerId, team) {
+// The current player spins: every client animates the wheel(s) toward the
+// same team (and, in historical mode, the same year). `nonce` distinguishes
+// consecutive spins.
+export async function writeSpin(pin, playerId, team, year = null) {
   await update(ref(db, `${BASE}/${pin}`), {
     spin: {
       team,
+      ...(year ? { year } : {}),
       by: playerId,
       nonce: Math.floor(Math.random() * 1e9),
       at: Date.now(),
@@ -174,7 +190,11 @@ export async function writeSpin(pin, playerId, team) {
 //
 // `usedTeams` is write-once in the rules, so a double-tap can't commit the
 // same team twice. The last pick of the last round ends the game.
-export async function commitPick(pin, playerId, session, { slot, player, team, bonus }) {
+// Historical picks additionally carry `year` (the spun season) and `pts`
+// (that season's real points, known at pick time) so Results needs no
+// further fetching; `usedTeams` is keyed `${year}_${team}` there, so the
+// same franchise stays spinnable in other years.
+export async function commitPick(pin, playerId, session, { slot, player, team, bonus, year, pts }) {
   const n = (session.order || []).length;
   const solo = (session.mode || DEFAULT_MODE) === 'solo';
   const total = (session.turnIndex || 0) + 1; // picks made once this commits
@@ -185,13 +205,15 @@ export async function commitPick(pin, playerId, session, { slot, player, team, b
       name: player.name,
       pos: player.pos,
       team,
+      ...(year ? { year } : {}),
+      ...(typeof pts === 'number' ? { pts } : {}),
       bonus: Boolean(bonus),
     },
     turnIndex: total,
   };
   if (solo || (n > 0 && total % n === 0)) {
-    // The team is spent: clear the wheel for the next spin.
-    updates[`usedTeams/${team}`] = playerId;
+    // The team (or team-season) is spent: clear the wheel for the next spin.
+    updates[`usedTeams/${year ? `${year}_${team}` : team}`] = playerId;
     updates.spin = null;
   }
   if (total >= SLOTS.length * n) updates.status = 'ended';

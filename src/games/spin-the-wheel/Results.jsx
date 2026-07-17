@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toPlayerList } from './session.js';
-import { SLOTS, RANK_BONUS, nameBonus } from './constants.js';
+import { SLOTS, RANK_BONUS, DEFAULT_ERA, nameBonus } from './constants.js';
 import { TEAMS } from './teams.js';
 import { fetchProjection } from './sleeper.js';
 import { recordBestScore, useBestScores, bestFor } from './records.js';
@@ -17,6 +17,10 @@ function TeamChip({ abbr }) {
 }
 
 export default function Results({ session, playerId }) {
+  // Historical sessions stored each pick's real season points at pick time,
+  // so no projection fetching is needed — scoring is immediate.
+  const historical = (session.era || DEFAULT_ERA) === 'historical';
+
   // Memoized on the session snapshot: pickedIds feeds the fetch effect below,
   // so its identity must not change on unrelated re-renders.
   const players = useMemo(() => toPlayerList(session), [session]);
@@ -38,6 +42,10 @@ export default function Results({ session, playerId }) {
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
+    if (historical) {
+      setProj({}); // unused: picks carry their own real points
+      return undefined;
+    }
     let alive = true;
     setError(false);
     Promise.all(pickedIds.map((id) => fetchProjection(id)))
@@ -53,17 +61,22 @@ export default function Results({ session, playerId }) {
     return () => {
       alive = false;
     };
-  }, [pickedIds, attempt]);
+  }, [pickedIds, attempt, historical]);
 
   const scored = useMemo(() => {
     if (!proj) return null;
 
-    // Points of a pick before the head-to-head rank bonus: the Sleeper
-    // projection, times the slot's name bonus if the player was named from
-    // memory (×1.2, or ×1.3 at RB1/WR1).
+    // Base points of a pick: the season projection (current era) or the real
+    // points stored on the pick itself (historical era).
+    const basePoints = (pick) =>
+      historical ? pick.pts || 0 : proj[pick.id] || 0;
+
+    // Points of a pick before the head-to-head rank bonus: the base points,
+    // times the slot's name bonus if the player was named from memory
+    // (×1.2, or ×1.3 at RB1/WR1).
     const pickPoints = (pick, slot) => {
       if (!pick) return 0;
-      const base = proj[pick.id] || 0;
+      const base = basePoints(pick);
       return pick.bonus ? base * nameBonus(slot) : base;
     };
 
@@ -89,7 +102,7 @@ export default function Results({ session, playerId }) {
         const rows = SLOTS.map((slot) => {
           const pick = p.roster?.[slot];
           if (!pick) return { slot, pick: null, points: 0 };
-          const base = proj[pick.id] || 0;
+          const base = basePoints(pick);
           const named = pick.bonus ? base * nameBonus(slot) : base;
           const rankMultiplier = rankMult[slot][p.id] || 1;
           return {
@@ -104,7 +117,7 @@ export default function Results({ session, playerId }) {
         return { ...p, rows, total };
       })
       .sort((a, b) => b.total - a.total);
-  }, [proj, players]);
+  }, [proj, players, historical]);
 
   const winner = scored?.[0];
 
@@ -115,7 +128,9 @@ export default function Results({ session, playerId }) {
   const [myRecord, setMyRecord] = useState(null);
   const recordedRef = useRef(false);
   useEffect(() => {
-    if (!scored || recordedRef.current) return;
+    // Historical totals are real (often bigger) points — recording them would
+    // drown the projection-based leaderboard, so bests stay current-era only.
+    if (historical || !scored || recordedRef.current) return;
     const me = scored.find((p) => p.id === playerId);
     if (!me || me.bot) return;
     recordedRef.current = true;
@@ -147,7 +162,7 @@ export default function Results({ session, playerId }) {
       {winner && (
         <div className="results__winner">
           🏆 <strong>{winner.name}</strong> remporte la partie avec{' '}
-          {winner.total.toFixed(1)} points projetés
+          {winner.total.toFixed(1)} {historical ? 'vrais points' : 'points projetés'}
         </div>
       )}
 
@@ -189,6 +204,9 @@ export default function Results({ session, playerId }) {
                       {pick ? (
                         <>
                           <TeamChip abbr={pick.team} />
+                          {pick.year && (
+                            <span className="stw-year-tag">{pick.year}</span>
+                          )}
                           {pick.name}
                           {pick.bonus && (
                             <span className="stw-bonus">×{nameBonus(slot)}</span>

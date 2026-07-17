@@ -61,6 +61,54 @@ export const MODES = {
 export const MODE_KEYS = ['shared', 'solo'];
 export const DEFAULT_MODE = 'shared';
 
+// The era, chosen by the host in the lobby.
+// - current: rosters and points come from the upcoming season's Sleeper
+//   projections (original rules).
+// - historical: every spin first draws a YEAR (second wheel), then a team;
+//   picks come from that season's real roster and score that season's real
+//   fantasy points (PPR). See history.js for the data source.
+export const ERAS = {
+  current: {
+    label: 'Saison actuelle',
+    hint: 'Points selon les projections Sleeper',
+  },
+  historical: {
+    label: 'Historique 🕰️',
+    hint: 'Roue des années en plus — vrais points de la saison tirée',
+  },
+};
+export const ERA_KEYS = ['current', 'historical'];
+export const DEFAULT_ERA = 'current';
+
+// Sleeper's per-season stats (with the team each player was on that year)
+// are reliable from about 2010 onward — earlier seasons come back empty.
+export const MIN_HISTORY_SEASON = 2010;
+
+// Latest season whose real points are final. The season is labeled by its
+// starting year and wraps up in early February, so before March the season
+// that started last calendar year may still be in progress.
+export function lastCompletedSeason() {
+  const now = new Date();
+  return now.getMonth() >= 2 ? now.getFullYear() - 1 : now.getFullYear() - 2;
+}
+
+// The host-selected year range, clamped to what Sleeper can serve. Every
+// client derives the same list, so the year wheel is identical everywhere.
+export function historyRange(session) {
+  const min = MIN_HISTORY_SEASON;
+  const max = lastCompletedSeason();
+  const clamp = (v, fallback) => {
+    const n = Number(v);
+    return Number.isFinite(n) && n ? Math.min(Math.max(n, min), max) : fallback;
+  };
+  let from = clamp(session?.yearFrom, min);
+  let to = clamp(session?.yearTo, max);
+  if (from > to) [from, to] = [to, from];
+  const years = [];
+  for (let y = from; y <= to; y += 1) years.push(y);
+  return { from, to, years };
+}
+
 // Bonus multiplier applied to a player's projection when he was picked by
 // typing his name (instead of choosing from the list). The premium skill
 // slots RB1 and WR1 pay more.

@@ -4,6 +4,7 @@ import { writeSpin, commitPick, toPlayerList, deriveTurn } from './session.js';
 import {
   DIFFICULTIES,
   DEFAULT_DIFFICULTY,
+  DEFAULT_ERA,
   SLOTS,
   SLOT_POSITIONS,
   NAME_BONUS,
@@ -11,12 +12,17 @@ import {
   BOTS,
   nameBonus,
   openSlots,
+  historyRange,
 } from './constants.js';
-import { TEAMS, remainingTeams } from './teams.js';
+import { TEAMS, TEAM_KEYS, remainingTeams } from './teams.js';
 import { fetchRosters, eligiblePlayers } from './sleeper.js';
+import { fetchSeasonRosters, yearColor } from './history.js';
 import { bestMatch } from './match.js';
 import { botChoose } from './bot.js';
 import Wheel from './Wheel.jsx';
+
+const teamItems = (abbrs) =>
+  abbrs.map((abbr) => ({ key: abbr, label: abbr, color: TEAMS[abbr].color }));
 
 function TeamChip({ abbr }) {
   const team = TEAMS[abbr];
@@ -54,6 +60,9 @@ function RosterBoard({ players, currentUid, meId }) {
                   {pick ? (
                     <span className="stw-slot-pick">
                       <TeamChip abbr={pick.team} />
+                      {pick.year && (
+                        <span className="stw-year-tag">{pick.year}</span>
+                      )}
                       {pick.name}
                       {pick.bonus && <span className="stw-bonus">×{nameBonus(slot)}</span>}
                     </span>
@@ -84,19 +93,29 @@ export default function Game({ pin, session, playerId }) {
   const difficulty =
     DIFFICULTIES[session.difficulty] || DIFFICULTIES[DEFAULT_DIFFICULTY];
   const spin = session.spin || null;
-  const remaining = remainingTeams(session.usedTeams);
+  const historical = (session.era || DEFAULT_ERA) === 'historical';
+  const { years } = historyRange(session);
+  // In historical mode a team-season is the unit, so the full 32-team wheel
+  // always shows; the spin itself avoids already-used (year, team) combos.
+  const remaining = historical ? TEAM_KEYS : remainingTeams(session.usedTeams);
 
   // NFL players already off-limits for this pick. A player can be drafted only
   // once ever, so in solo mode nobody on the spun team may already be owned; in
   // shared mode teams never repeat, so any roster entry on the spun team was
   // taken earlier this same round. Kickers and defenses are exempt — a team
   // carries a single DEF and usually one K, so those can be drafted by
-  // several players.
+  // several players. In historical mode the same id in a DIFFERENT season is a
+  // different card, so the year must match too.
   const takenIds = new Set();
   if (spin) {
     players.forEach((p) =>
       Object.values(p.roster || {}).forEach((pk) => {
-        if (pk.team === spin.team && pk.pos !== 'K' && pk.pos !== 'DEF') {
+        if (
+          pk.team === spin.team &&
+          (pk.year || null) === (spin.year || null) &&
+          pk.pos !== 'K' &&
+          pk.pos !== 'DEF'
+        ) {
           takenIds.add(pk.id);
         }
       }),
@@ -108,6 +127,7 @@ export default function Game({ pin, session, playerId }) {
   const [rosterError, setRosterError] = useState(false);
   const [rosterTry, setRosterTry] = useState(0);
   useEffect(() => {
+    if (historical) return undefined; // current-era rosters not needed
     let alive = true;
     setRosterError(false);
     fetchRosters()
@@ -116,7 +136,34 @@ export default function Game({ pin, session, playerId }) {
     return () => {
       alive = false;
     };
-  }, [rosterTry]);
+  }, [rosterTry, historical]);
+
+  // Historical: the spun season's rosters (with real points), fetched per
+  // spin — the ~10 s double-wheel animation hides the download.
+  const [seasonData, setSeasonData] = useState({ year: null, buckets: null, error: false });
+  useEffect(() => {
+    if (!historical || !spin?.year) return undefined;
+    let alive = true;
+    setSeasonData({ year: spin.year, buckets: null, error: false });
+    fetchSeasonRosters(spin.year)
+      .then(
+        (b) =>
+          alive && setSeasonData({ year: spin.year, buckets: b, error: false }),
+      )
+      .catch(
+        () =>
+          alive && setSeasonData({ year: spin.year, buckets: null, error: true }),
+      );
+    return () => {
+      alive = false;
+    };
+  }, [historical, spin?.year, rosterTry]);
+
+  // Whichever roster source the era calls for.
+  const activeRosters = historical
+    ? (spin && seasonData.year === spin.year && seasonData.buckets) || null
+    : rosters;
+  const activeError = historical ? seasonData.error : rosterError;
 
   // --- Spin / pick local state ---
   const [settledNonce, setSettledNonce] = useState(null);
@@ -147,8 +194,8 @@ export default function Game({ pin, session, playerId }) {
   // Players already drafted this round are off the menu — and off the
   // name-guess pool (they're kept aside for a clearer "déjà pris" message).
   const allEligible =
-    myPickPhase && slot && rosters
-      ? eligiblePlayers(rosters, spin.team, positions)
+    myPickPhase && slot && activeRosters
+      ? eligiblePlayers(activeRosters, spin.team, positions)
       : [];
   const candidates = allEligible.filter((c) => !takenIds.has(c.id));
   const takenCandidates = allEligible.filter((c) => takenIds.has(c.id));
@@ -158,7 +205,7 @@ export default function Game({ pin, session, playerId }) {
   // the same 10 seconds and switching slots does not re-arm it. Running out
   // of time forfeits the guess to the list (no bonus).
   const guessTimerMs = difficulty.guessTimerMs || 0;
-  const guessOpen = myPickPhase && Boolean(rosters) && !guessFailed;
+  const guessOpen = myPickPhase && Boolean(activeRosters) && !guessFailed;
   useEffect(() => {
     if (!guessTimerMs || !guessOpen || guessDeadline) return;
     setGuessDeadline(Date.now() + guessTimerMs);
@@ -186,12 +233,37 @@ export default function Game({ pin, session, playerId }) {
     return () => clearInterval(id);
   }, [guessDeadline, guessFailed, busy]);
 
+  // What the next spin should land on. Current era: a team still on the
+  // wheel. Historical: a random year from the range, then a team whose
+  // (year, team) combo hasn't been burned yet — if that season is fully
+  // used (tiny ranges), another year is tried.
+  const spinTarget = () => {
+    if (!historical) {
+      if (!remaining.length) return null;
+      return {
+        team: remaining[Math.floor(Math.random() * remaining.length)],
+        year: null,
+      };
+    }
+    const shuffled = [...years].sort(() => Math.random() - 0.5);
+    for (const year of shuffled) {
+      const pool = TEAM_KEYS.filter(
+        (abbr) => !session.usedTeams?.[`${year}_${abbr}`],
+      );
+      if (pool.length) {
+        return { team: pool[Math.floor(Math.random() * pool.length)], year };
+      }
+    }
+    return null;
+  };
+
   const handleSpin = async () => {
-    if (busy || !remaining.length) return;
+    if (busy) return;
+    const target = spinTarget();
+    if (!target) return;
     setBusy(true);
     try {
-      const team = remaining[Math.floor(Math.random() * remaining.length)];
-      await writeSpin(pin, playerId, team);
+      await writeSpin(pin, playerId, target.team, target.year);
     } finally {
       setBusy(false);
     }
@@ -206,6 +278,8 @@ export default function Game({ pin, session, playerId }) {
         player,
         team: spin.team,
         bonus,
+        year: spin.year || null,
+        pts: historical ? player.pts ?? 0 : undefined,
       });
     } catch {
       setFeedback({ type: 'err', text: 'Erreur — réessayez.' });
@@ -243,31 +317,34 @@ export default function Game({ pin, session, playerId }) {
   // fires once; short delays keep it feeling human and let the wheel animate.
   const botActRef = useRef('');
   useEffect(() => {
-    if (!isHost || !rosters || !currentIsBot || session.status !== 'playing') {
+    if (!isHost || !currentIsBot || session.status !== 'playing') {
       return undefined;
     }
     const level = currentPlayer.bot;
 
     // Bot needs to spin first (it's the spinner and the wheel is idle).
+    // No roster data required for this — historical rosters only load once
+    // the year is known anyway.
     if (!spin) {
-      if (spinnerUid !== currentUid || !remaining.length) return undefined;
+      if (spinnerUid !== currentUid) return undefined;
       const sig = `spin:${turnIndex}`;
       if (botActRef.current === sig) return undefined;
       const t = setTimeout(() => {
+        const target = spinTarget();
+        if (!target) return;
         botActRef.current = sig;
-        const team = remaining[Math.floor(Math.random() * remaining.length)];
-        writeSpin(pin, currentUid, team).catch(() => {});
+        writeSpin(pin, currentUid, target.team, target.year).catch(() => {});
       }, 800);
       return () => clearTimeout(t);
     }
 
-    // Wheel has settled: make the bot's pick.
-    if (!settled) return undefined;
+    // Wheel has settled and the rosters are in: make the bot's pick.
+    if (!settled || !activeRosters) return undefined;
     const sig = `pick:${turnIndex}:${spin.nonce}`;
     if (botActRef.current === sig) return undefined;
     const t = setTimeout(() => {
       botActRef.current = sig;
-      botChoose(level, openSlots(currentPlayer), rosters, spin.team, takenIds)
+      botChoose(level, openSlots(currentPlayer), activeRosters, spin.team, takenIds)
         .then((choice) => {
           if (!choice) return undefined; // no legal pick (extremely rare); wait it out
           // Bots "name" their pick from memory at their level's rate, earning
@@ -278,6 +355,8 @@ export default function Game({ pin, session, playerId }) {
             player: choice.player,
             team: spin.team,
             bonus,
+            year: spin.year || null,
+            pts: historical ? choice.player.pts ?? 0 : undefined,
           });
         })
         .catch(() => {});
@@ -285,7 +364,7 @@ export default function Game({ pin, session, playerId }) {
     return () => clearTimeout(t);
   }, [
     isHost,
-    rosters,
+    activeRosters,
     currentIsBot,
     currentUid,
     spinnerUid,
@@ -303,13 +382,14 @@ export default function Game({ pin, session, playerId }) {
       ? 'À vous de jouer ! Faites tourner la roue.'
       : `${spinnerPlayer?.name || '…'} fait tourner la roue…`;
   } else if (!settled) {
-    statusText = 'La roue tourne…';
+    statusText = historical ? 'Les roues tournent…' : 'La roue tourne…';
   } else {
     const teamName = TEAMS[spin.team]?.name || spin.team;
+    const spunLabel = spin.year ? `${teamName} ${spin.year}` : teamName;
     const counter = solo ? '' : ` (${picksInRound + 1}/${n})`;
     statusText = isMyPick
-      ? `${teamName} — à vous de choisir !${counter}`
-      : `${teamName} — ${currentPlayer?.name || '…'} choisit…${counter}`;
+      ? `${spunLabel} — à vous de choisir !${counter}`
+      : `${spunLabel} — ${currentPlayer?.name || '…'} choisit…${counter}`;
   }
 
   return (
@@ -323,21 +403,60 @@ export default function Game({ pin, session, playerId }) {
         </span>
       </div>
 
-      <Wheel
-        teams={remaining}
-        spin={spin}
-        onSettled={(s) => setSettledNonce(s.nonce)}
-      />
+      {historical ? (
+        // Two chained wheels: the year settles first, then the team wheel
+        // starts (delayMs), and only ITS settling opens the pick phase.
+        <div className="stw-wheels">
+          <Wheel
+            items={years.map((y) => ({
+              key: String(y),
+              label: String(y),
+              color: yearColor(y),
+            }))}
+            spin={spin}
+            targetKey={spin?.year ? String(spin.year) : null}
+            icon="📅"
+          />
+          <Wheel
+            items={teamItems(remaining)}
+            spin={spin}
+            targetKey={spin?.team}
+            delayMs={SPIN_MS}
+            onSettled={(s) => setSettledNonce(s.nonce)}
+          />
+        </div>
+      ) : (
+        <Wheel
+          items={teamItems(remaining)}
+          spin={spin}
+          targetKey={spin?.team}
+          onSettled={(s) => setSettledNonce(s.nonce)}
+        />
+      )}
 
       {isSpinner && !spin && (
         <button
           type="button"
           className="btn btn--primary btn--big"
-          disabled={busy || !remaining.length}
+          disabled={busy || (historical ? !years.length : !remaining.length)}
           onClick={handleSpin}
         >
-          🎡 Tourner la roue
+          {historical ? '🎡 Tourner les roues' : '🎡 Tourner la roue'}
         </button>
+      )}
+
+      {historical && spin && activeError && (
+        <p className="error-text">
+          Impossible de charger la saison {spin.year}.{' '}
+          {/* Visible to everyone (a stuck bot needs the host to retry). */}
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setRosterTry((k) => k + 1)}
+          >
+            Réessayer
+          </button>
+        </p>
       )}
 
       {myPickPhase && (
@@ -345,6 +464,7 @@ export default function Game({ pin, session, playerId }) {
           <div className="stw-pick__team">
             <TeamChip abbr={spin.team} />
             <strong>{TEAMS[spin.team]?.name}</strong>
+            {spin.year && <span className="stw-year-tag">{spin.year}</span>}
             {guessTimerMs > 0 && !guessFailed && timeLeftMs != null && (
               <span
                 className={`stw-timer${timeLeftMs <= 3000 ? ' is-low' : ''}`}
@@ -378,23 +498,27 @@ export default function Game({ pin, session, playerId }) {
             </p>
           )}
 
-          {slot && rosterError && (
+          {slot && !historical && activeError && (
             <p className="error-text">
               Impossible de charger les effectifs NFL.{' '}
               <button
                 type="button"
                 className="btn"
-                onClick={() => setRosterTry((n) => n + 1)}
+                onClick={() => setRosterTry((k) => k + 1)}
               >
                 Réessayer
               </button>
             </p>
           )}
-          {slot && !rosters && !rosterError && (
-            <p className="muted">Chargement des effectifs NFL…</p>
+          {slot && !activeRosters && !activeError && (
+            <p className="muted">
+              {historical
+                ? `Chargement de la saison ${spin.year}…`
+                : 'Chargement des effectifs NFL…'}
+            </p>
           )}
 
-          {slot && rosters && (
+          {slot && activeRosters && (
             <>
               <h3>2. Nommez un joueur ({positions.join(' / ')})</h3>
               {difficulty.noDelete && !guessFailed && (

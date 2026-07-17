@@ -4,6 +4,8 @@ import {
   startSession,
   setDifficulty,
   setMode,
+  setEra,
+  setYearRange,
   addBot,
   removeBot,
   toPlayerList,
@@ -15,6 +17,12 @@ import {
   MODES,
   MODE_KEYS,
   DEFAULT_MODE,
+  ERAS,
+  ERA_KEYS,
+  DEFAULT_ERA,
+  MIN_HISTORY_SEASON,
+  lastCompletedSeason,
+  historyRange,
   BOTS,
   BOT_KEYS,
   NAME_BONUS,
@@ -28,6 +36,12 @@ export default function Lobby({ pin, session, playerId }) {
   const players = toPlayerList(session);
   const difficulty = session.difficulty || DEFAULT_DIFFICULTY;
   const mode = session.mode || DEFAULT_MODE;
+  const era = session.era || DEFAULT_ERA;
+  const { from: yearFrom, to: yearTo } = historyRange(session);
+  const allYears = [];
+  for (let y = MIN_HISTORY_SEASON; y <= lastCompletedSeason(); y += 1) {
+    allYears.push(y);
+  }
   const bests = useBestScores();
   const maxPlayers = MODES[mode].maxPlayers;
   const tooMany = players.length > maxPlayers;
@@ -69,6 +83,63 @@ export default function Lobby({ pin, session, playerId }) {
             </button>
           ))}
         </div>
+      </section>
+
+      <section>
+        <h2>Époque</h2>
+        <div className="stw-diff-grid">
+          {ERA_KEYS.map((key) => (
+            <button
+              key={key}
+              type="button"
+              className={`stw-diff-btn${era === key ? ' is-active' : ''}`}
+              disabled={!isHost}
+              onClick={() => setEra(pin, key)}
+            >
+              <span className="stw-diff-btn__label">{ERAS[key].label}</span>
+              <span className="stw-diff-btn__hint">{ERAS[key].hint}</span>
+            </button>
+          ))}
+        </div>
+        {era === 'historical' && (
+          <>
+            <div className="stw-year-range">
+              <label>
+                De{' '}
+                <select
+                  value={yearFrom}
+                  disabled={!isHost}
+                  onChange={(e) =>
+                    setYearRange(pin, Number(e.target.value), yearTo)
+                  }
+                >
+                  {allYears.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                à{' '}
+                <select
+                  value={yearTo}
+                  disabled={!isHost}
+                  onChange={(e) =>
+                    setYearRange(pin, yearFrom, Number(e.target.value))
+                  }
+                >
+                  {allYears.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <p className="muted stw-diff-hint">
+              Chaque tour : la roue des années, puis la roue des équipes. Les
+              points sont les vrais points fantasy (PPR) de la saison tirée —
+              données Sleeper, disponibles depuis {MIN_HISTORY_SEASON}.
+            </p>
+          </>
+        )}
       </section>
 
       <section>

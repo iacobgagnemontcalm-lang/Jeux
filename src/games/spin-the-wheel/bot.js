@@ -68,7 +68,15 @@ export async function botChoose(level, openSlots, rosters, team, takenIds) {
   }
 
   const cands = [...byId.values()];
-  const points = await Promise.all(cands.map((c) => fetchProjection(c.player.id)));
+  // Historical rosters carry the season's real points on each player — no
+  // projection fetch needed there.
+  const points = await Promise.all(
+    cands.map((c) =>
+      typeof c.player.pts === 'number'
+        ? c.player.pts
+        : fetchProjection(c.player.id),
+    ),
+  );
   cands.forEach((c, i) => {
     c.pts = points[i];
   });
