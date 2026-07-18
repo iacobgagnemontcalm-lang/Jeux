@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { usePlayer } from '../../auth.jsx';
+import InstallAppButton from '../../components/InstallAppButton.jsx';
 import { createSession, sessionExists, joinSession } from './session.js';
 
 const NAME_KEY = 'stw_player_name';
@@ -122,6 +123,8 @@ export default function Entry() {
       </div>
 
       {error && <p className="error-text">{error}</p>}
+
+      <InstallAppButton />
     </div>
   );
 }

@@ -1,0 +1,18 @@
+{
+  "id": "spin-the-wheel",
+  "name": "Spin the Wheel",
+  "short_name": "Spin the Wheel",
+  "description": "Draft fantasy NFL : tournez la roue des 32 équipes et bâtissez le meilleur alignement.",
+  "lang": "fr",
+  "start_url": "./#/spin-the-wheel",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#071427",
+  "theme_color": "#0a1830",
+  "icons": [
+    { "src": "icons/wheel-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/wheel-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/wheel-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

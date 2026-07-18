@@ -111,6 +111,32 @@ Rosters and projections come from the public [Sleeper API](https://docs.sleeper.
 state is stored under `wheelSessions/$pin` (see `database.rules.json` — deploy
 the rules with `firebase deploy --only database` before the first game).
 
+## Installer sur téléphone (app) 📲
+
+Le site est une **PWA** (Progressive Web App) : une fois le site déployé (voir
+plus bas), il s'installe comme une vraie app — icône sur l'écran d'accueil,
+plein écran sans barre de navigateur, et la coquille de l'app se charge même
+hors-ligne (les parties, elles, demandent du réseau pour Firebase).
+
+L'identité de l'app suit la page où on l'installe :
+
+- Depuis l'accueil → app **Jeux** (icône manette) qui ouvre le menu des jeux.
+- Depuis la page **Spin the Wheel** → app **Spin the Wheel** (icône roue NFL)
+  qui s'ouvre **directement dans le jeu**.
+
+Comment installer :
+
+- **Android / Chrome :** un bouton **📲 Installer l'app** apparaît sur la page
+  de Spin the Wheel (ou menu Chrome ⋮ → *Installer l'application*).
+- **iPhone / iPad :** dans Safari, **Partager** → **« Sur l'écran
+  d'accueil »**. Le bouton 📲 de la page affiche ce mode d'emploi.
+
+Les morceaux techniques : `public/manifest.webmanifest` (app Jeux),
+`public/manifest-wheel.webmanifest` (app Spin the Wheel),
+`public/sw.js` (service worker de cache), `public/icons/` (icônes générées),
+et `src/pwa.jsx` (enregistrement + bascule d'identité par route + bouton
+d'installation).
+
 ## Setup
 
 You need a Firebase project (free "Spark" plan is enough).

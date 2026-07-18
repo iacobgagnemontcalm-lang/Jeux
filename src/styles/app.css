@@ -1219,3 +1219,23 @@ body {
   padding: 1px 7px;
   white-space: nowrap;
 }
+
+/* --- Bouton « Installer l'app » (PWA) --- */
+.install-app {
+  margin-top: 18px;
+  text-align: center;
+}
+.install-app__btn {
+  font-size: 14px;
+  opacity: 0.85;
+}
+.install-app__help {
+  margin: 10px auto 0;
+  max-width: 340px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  padding: 10px 14px;
+}

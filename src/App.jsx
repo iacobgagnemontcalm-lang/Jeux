@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { isFirebaseConfigured } from './firebase.js';
 import { usePlayer } from './auth.jsx';
+import { PwaIdentity } from './pwa.jsx';
 import GameSelect from './pages/GameSelect.jsx';
 import FruitInterdit from './games/fruit-interdit/FruitInterdit.jsx';
 import SoccerCars from './games/soccer-cars/SoccerCars.jsx';
@@ -54,6 +55,7 @@ function RequireFirebase({ children }) {
 export default function App() {
   return (
     <div className="app-shell">
+      <PwaIdentity />
       <Routes>
         <Route path="/" element={<GameSelect />} />
         <Route
