@@ -137,6 +137,61 @@ Les morceaux techniques : `public/manifest.webmanifest` (app Jeux),
 et `src/pwa.jsx` (enregistrement + bascule d'identité par route + bouton
 d'installation).
 
+## Publish to the App Store / Play Store 🏪
+
+The repo also contains real **native projects** (`android/` and `ios/`),
+generated with [Capacitor](https://capacitorjs.com). They bundle the built web
+game inside a native shell named **Spin the Wheel** (id
+`com.iacobgagnemontcalm.spinthewheel`, icon + splash screen included) that
+opens directly into the game. What no tool can do for you: the developer
+accounts and the final upload.
+
+**Every time the game changes**, refresh the native projects before building:
+
+```bash
+npm run app:sync        # = vite build + cap sync (copies dist/ into android/ and ios/)
+```
+
+### Google Play (Android) — $25 one-time, any computer
+
+1. Install [Android Studio](https://developer.android.com/studio), then
+   `npm run app:android` (or open the `android/` folder in Android Studio).
+   Plug in a phone and press ▶ to try the real app immediately — no account
+   needed for that.
+2. Create a [Play Console](https://play.google.com/console) developer account
+   ($25, one-time).
+3. **Build → Generate Signed App Bundle** in Android Studio. It walks you
+   through creating a **keystore** — a signing key file. **Back it up and
+   remember the password**: losing it means you can never update the app.
+4. In the Play Console: create the app, upload the `.aab`, fill the store
+   listing (screenshots, description, content rating questionnaire), and
+   submit. First review typically takes a few days. New accounts must run a
+   small closed test (12+ testers for 14 days) before public release —
+   friends' emails work fine, and they're exactly who you'll play with anyway.
+5. To ship an update later: bump `versionCode`/`versionName` in
+   `android/app/build.gradle`, `npm run app:sync`, rebuild the bundle, upload.
+
+### App Store (iPhone) — $99/year, needs a Mac
+
+1. On a Mac with [Xcode](https://apps.apple.com/app/xcode/id497799835):
+   `npm run app:ios` (the iOS project uses Swift Package Manager — no extra
+   setup). With a free Apple ID you can already run the app on your own
+   iPhone via cable.
+2. Join the [Apple Developer Program](https://developer.apple.com/programs/)
+   ($99/year) to distribute.
+3. In Xcode: select your team under **Signing & Capabilities**, then
+   **Product → Archive → Distribute App → App Store Connect**.
+4. In [App Store Connect](https://appstoreconnect.apple.com): create the app,
+   fill the listing, submit for review (usually 1–2 days).
+5. **No Mac?** A cloud build service like
+   [Codemagic](https://codemagic.io) (free tier) can build and upload the iOS
+   app from this GitHub repo — you still need the $99 Apple account.
+
+> Good to know for review: the game needs network for Firebase and the Sleeper
+> API, uses only anonymous sign-in (no account creation), and collects no
+> personal data beyond a display name — that's what you'll declare in both
+> stores' privacy questionnaires.
+
 ## Setup
 
 You need a Firebase project (free "Spark" plan is enough).

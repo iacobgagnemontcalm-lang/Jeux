@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Spin the Wheel</string>
+    <string name="title_activity_main">Spin the Wheel</string>
+    <string name="package_name">com.iacobgagnemontcalm.spinthewheel</string>
+    <string name="custom_url_scheme">com.iacobgagnemontcalm.spinthewheel</string>
+</resources>
