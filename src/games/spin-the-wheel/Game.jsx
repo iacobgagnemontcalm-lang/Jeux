@@ -102,19 +102,17 @@ export default function Game({ pin, session, playerId }) {
   // NFL players already off-limits for this pick. A player can be drafted only
   // once ever, so in solo mode nobody on the spun team may already be owned; in
   // shared mode teams never repeat, so any roster entry on the spun team was
-  // taken earlier this same round. Kickers and defenses are exempt — a team
-  // carries a single DEF and usually one K, so those can be drafted by
-  // several players. In historical mode the same id in a DIFFERENT season is a
-  // different card, so the year must match too.
+  // taken earlier this same round. This includes K and DEF — duplicates are
+  // only unlocked as a last resort (see dupAllowed below). In historical mode
+  // the same id in a DIFFERENT season is a different card, so the year must
+  // match too.
   const takenIds = new Set();
   if (spin) {
     players.forEach((p) =>
       Object.values(p.roster || {}).forEach((pk) => {
         if (
           pk.team === spin.team &&
-          (pk.year || null) === (spin.year || null) &&
-          pk.pos !== 'K' &&
-          pk.pos !== 'DEF'
+          (pk.year || null) === (spin.year || null)
         ) {
           takenIds.add(pk.id);
         }
@@ -191,14 +189,31 @@ export default function Game({ pin, session, playerId }) {
   const myPickPhase = isMyPick && spin && settled;
   const myOpenSlots = openSlots(me);
   const positions = slot ? SLOT_POSITIONS[slot] : [];
+  // Drafting a player someone else already took (typically the team's lone
+  // DEF or K — in historical mode it can be a thin QB/TE room too) is a last
+  // resort: it only unlocks when NONE of my open slots has a fresh player
+  // left on the spun team, i.e. I'd otherwise be blocked.
+  const dupAllowed =
+    myPickPhase && activeRosters
+      ? !myOpenSlots.some((s) =>
+          eligiblePlayers(activeRosters, spin.team, SLOT_POSITIONS[s]).some(
+            (c) => !takenIds.has(c.id),
+          ),
+        )
+      : false;
   // Players already drafted this round are off the menu — and off the
-  // name-guess pool (they're kept aside for a clearer "déjà pris" message).
+  // name-guess pool (they're kept aside for a clearer "déjà pris" message) —
+  // unless the duplicate fallback is on, in which case everyone is pickable.
   const allEligible =
     myPickPhase && slot && activeRosters
       ? eligiblePlayers(activeRosters, spin.team, positions)
       : [];
-  const candidates = allEligible.filter((c) => !takenIds.has(c.id));
-  const takenCandidates = allEligible.filter((c) => takenIds.has(c.id));
+  const candidates = dupAllowed
+    ? allEligible
+    : allEligible.filter((c) => !takenIds.has(c.id));
+  const takenCandidates = dupAllowed
+    ? []
+    : allEligible.filter((c) => takenIds.has(c.id));
 
   // Expert shot clock: the countdown starts the moment the pick phase opens
   // (wheel settled on your turn, rosters ready) — choosing a slot eats into
@@ -521,6 +536,12 @@ export default function Game({ pin, session, playerId }) {
           {slot && activeRosters && (
             <>
               <h3>2. Nommez un joueur ({positions.join(' / ')})</h3>
+              {dupAllowed && (
+                <p className="muted stw-diff-hint">
+                  Tout est déjà pris sur cette équipe — exceptionnellement,
+                  vous pouvez prendre un joueur déjà choisi.
+                </p>
+              )}
               {difficulty.noDelete && !guessFailed && (
                 <p className="muted stw-diff-hint">
                   Mode Expert : chaque lettre est définitive — impossible
@@ -587,6 +608,9 @@ export default function Game({ pin, session, playerId }) {
                       >
                         <span className="stw-candidate__pos">{c.pos}</span>
                         {c.name}
+                        {dupAllowed && takenIds.has(c.id) && (
+                          <span className="stw-year-tag">déjà pris</span>
+                        )}
                       </button>
                     </li>
                   ))}

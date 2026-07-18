@@ -22,15 +22,24 @@ const SCOUT_DEPTH = 3;
 export async function botChoose(level, openSlots, rosters, team, takenIds) {
   const skill = BOTS[level]?.skill ?? 0;
 
-  // Per open slot: the still-available players, best-first.
-  const options = openSlots
-    .map((slot) => ({
-      slot,
-      list: eligiblePlayers(rosters, team, SLOT_POSITIONS[slot]).filter(
-        (c) => !takenIds.has(c.id),
-      ),
-    }))
-    .filter((o) => o.list.length);
+  // Per open slot: the still-available players, best-first. Duplicating an
+  // already-taken player (same rule as humans, see dupAllowed in Game.jsx) is
+  // only unlocked when every open slot is otherwise blocked.
+  const slotOptions = (allowTaken) =>
+    openSlots
+      .map((slot) => ({
+        slot,
+        list: eligiblePlayers(rosters, team, SLOT_POSITIONS[slot]).filter(
+          (c) => allowTaken || !takenIds.has(c.id),
+        ),
+      }))
+      .filter((o) => o.list.length);
+  let dupAllowed = false;
+  let options = slotOptions(false);
+  if (!options.length) {
+    dupAllowed = true;
+    options = slotOptions(true);
+  }
   if (!options.length) return null;
 
   const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -46,7 +55,7 @@ export async function botChoose(level, openSlots, rosters, team, takenIds) {
   const availableAt = (pos) => {
     if (!posAvail[pos]) {
       posAvail[pos] = (rosters?.[team]?.[pos] || [])
-        .filter((c) => !takenIds.has(c.id))
+        .filter((c) => dupAllowed || !takenIds.has(c.id))
         .slice(0, SCOUT_DEPTH);
     }
     return posAvail[pos];
