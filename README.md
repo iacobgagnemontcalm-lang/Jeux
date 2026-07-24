@@ -1,7 +1,8 @@
 # Jeux 🎮
 
 A web app that hosts multiple party games. The home screen lists the available
-games as buttons; picking one opens it. The first game is **Fruit Interdit**.
+games as buttons; picking one opens it. Current games: **Fruit Interdit**,
+**Turbo Soccer**, **Spin the Wheel** and **Combine**.
 
 Built with **React + Vite** and backed by **Firebase Realtime Database** for live,
 cross-device sync (shared leaderboard, timer, code claiming).
@@ -13,9 +14,9 @@ Players find them and type the code into the app to score. Each session lasts
 **4 minutes**.
 
 - **Codes** are a letter *prefix* + a number. The prefix picks the fruit; the number
-  just makes each sticker unique. So `MANG1`, `MANG2`, … `MANG1000` are all mangoes.
+  just makes each sticker unique. So `MAN1`, `MAN2`, … `MAN1000` are all mangoes.
 - Each code can be scored **once ever per session** — there is only one physical
-  `MANG1`, so the first person to enter it claims it and it is then spent.
+  `MAN1`, so the first person to enter it claims it and it is then spent.
 - **Combo:** entering the *same fruit type back-to-back* multiplies its points
   (×2, ×3, … capped at ×5). A different fruit resets the streak.
 
@@ -24,9 +25,9 @@ Players find them and type the code into the app to score. Each session lasts
 | Fruit        | Prefix | Points |
 | ------------ | ------ | ------ |
 | Tomate       | `TOM`  | 1000   |
-| Mangue       | `MANG` | 600    |
+| Mangue       | `MAN`  | 600    |
+| Citron vert  | `LIM`  | 500    |
 | Citron       | `LEM`  | 350    |
-| Citron vert  | `LIME` | 350    |
 | Pomme        | `APP`  | 200    |
 | Myrtille     | `BLU`  | 100    |
 
@@ -41,6 +42,110 @@ All of this (prefixes, points, duration, combo cap) lives in
 4. Everyone hunts and enters codes. The screen shows the live **palmarès**
    (leaderboard), your own points, and your per-fruit tally.
 5. When time runs out, the final palmarès is shown.
+
+## Turbo Soccer ⚽🚗
+
+A local arcade game (no Firebase needed): two cars face off in a soccer arena,
+one goal on each side. Push the ball around, but the real weapon is the **nose
+hit** — striking the ball with the front bumper at speed sends it flying, and
+even more so with the turbo. First to lead when the 2-minute clock runs out
+wins; a tie goes to **golden goal** (next goal wins).
+
+- **Modes:** 1 player (vs a simple AI) or 2 players on the same keyboard.
+- **Player 1 (blue):** `WASD`/`ZQSD` (physical position, so it works on AZERTY
+  too) + `Left Shift` or `Space` for turbo.
+- **Player 2 (red):** arrow keys + `Right Shift` for turbo.
+- **Touch devices:** on-screen ◀ ▶ 🚀 buttons; the car accelerates by itself.
+- Turbo drains a gauge that recharges over time.
+
+Everything lives in `src/games/soccer-cars/` — `engine.js` (canvas physics +
+rendering, no dependencies) and `SoccerCars.jsx` (menu + screen + touch
+controls).
+
+## Spin the Wheel 🏈
+
+A turn-based NFL fantasy draft on a wheel, using the same PIN/lobby session
+system as Fruit Interdit (Firebase required). Up to **4 players**.
+
+- The host creates a session and picks, in the lobby, the **mode**, the
+  **difficulty** (Facile / Moyen / Difficile / Extrême / Expert) and optionally
+  adds **bots** to play against (Recrue / Connaisseur / Expert).
+- **Two modes:**
+  - **Équipe partagée** (max 4): the game runs in **9 rounds** (one per roster
+    slot). Each round one player — the *spinner* — **spins the wheel** of the
+    remaining teams, then **everyone drafts a distinct player from that same
+    team**: the spinner picks first, the others in seat order. The spinner seat
+    shifts each round, so the (random) first player picks last in round 2.
+  - **Chacun son équipe** (max 3): on your turn you spin and the team is yours
+    alone — pick one player, then it's the next player's turn.
+- Each pick fills one of your open roster slots — **QB, RB1, RB2, WR1, WR2,
+  TE, FLEX, K or DEF** (FLEX = RB/WR/TE). Every NFL skill player can be
+  drafted only once — except **kickers and defenses**, which several players
+  may draft (a team only carries one DEF and usually one K). Two ways to pick:
+  - **Name the player from memory** — if your spelling is close enough for the
+    difficulty (50% / 70% / 85% / 100% / 100% of the name), that player scores
+    a **×1.2 bonus** at the end (**×1.3** on the premium RB1 and WR1 slots).
+    A miss forces you to pick from the list. At **Expert**, a **10-second**
+    clock starts as soon as the wheel settles on your pick — choosing the slot
+    and typing the perfect name must both fit inside it, with **no erasing**
+    (every character is final). When time runs out you default to the list.
+  - **Pick from the list** (players at that position, from the Sleeper depth
+    chart) — no bonus.
+- When every roster is full, the game pulls each player's **season projection
+  from the Sleeper API** (PPR). Two bonuses stack on top: the name bonus
+  (×1.2, or ×1.3 at RB1/WR1), and a **head-to-head slot bonus** — at each slot
+  the player with the best projection scores ×1.2, the runner-up ×1.1,
+  everyone else ×1.0. Highest total wins.
+- **Personal bests**: each player's highest total ever is stored under their
+  name (`wheelBests` in the database — accents and capitalization ignored, so
+  Kévin/kevin share one record). The lobby shows a 🏅 next to players who hold
+  a record, and the results screen celebrates a new personal best.
+- **Bots** are driven by the host's device. Experts scout the Sleeper
+  projections and always draft the best available player; Connaisseurs scout
+  too but pick one of the top three; Recrues pick at random. Bots also "name"
+  their pick from memory — earning the ×1.2 name bonus — at a rate matching
+  their level (Recrue 15%, Connaisseur 50%, Expert 90%).
+
+Rosters and projections come from the public [Sleeper API](https://docs.sleeper.com)
+(no key needed). Everything lives in `src/games/spin-the-wheel/`; the realtime
+state is stored under `wheelSessions/$pin` (see `database.rules.json` — deploy
+the rules with `firebase deploy --only database` before the first game).
+
+## Combine 🏆
+
+A real-life mini-Combine you run with friends: **8 athletic challenges** —
+Bench Press, 40 yds Dash, Broad Jump, Longest Throw, Longest Punt, Precision
+Throws, Parcours and Quiz. One person creates a session and shares the 4-digit
+PIN; up to 12 players join with a nickname.
+
+### Flow (per challenge)
+
+1. **Scoring wheel** — the host spins a wheel that lands on **30, 20 or 12**
+   points for 1st place. Each place below is worth **2 points less**, never
+   below 0 (e.g. base 30 → 30, 28, 26, … for a 12-player field).
+2. **Vote** — two random not-yet-played challenges plus an **Aléatoire**
+   (surprise) option are proposed. Every player votes; plurality wins and ties
+   are broken at random.
+3. **Do it in real life**, then **enter the results** — reps for Bench Press,
+   seconds for the Dash and Parcours (lowest wins), metres for the jumps and
+   throws, points for Precision, good answers for the Quiz. Each player types
+   their own result, or the host can enter/correct everyone's from one device.
+4. **Podium** — players are ranked by their raw result (respecting whether
+   bigger or smaller is better), points are awarded from the wheel's ladder and
+   added to their total, and the podium is shown before moving on.
+
+An always-on scoreboard shows every nickname with its **running total and
+current position** (#1, #2, …) at all times. After the eighth challenge a final
+podium and a recap of every challenge is shown.
+
+**Rejoin safeguard:** a player's identity is their **username**, not the
+browser. Close the tab, come back — even on another device or after clearing
+storage — enter the same nickname and PIN, and you land back on the exact same
+player with your points and standing intact.
+
+Everything lives in `src/games/combine/`; the realtime state is stored under
+`combineSessions/$pin` (see `database.rules.json` — deploy the rules with
+`firebase deploy --only database` before the first game).
 
 ## Setup
 

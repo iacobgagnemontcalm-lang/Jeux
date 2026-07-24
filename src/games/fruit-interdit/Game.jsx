@@ -1,9 +1,22 @@
-import { useState, useCallback, useRef } from 'react';
-import { submitCode, endSession, toLeaderboard } from './session.js';
-import { FRUITS } from './constants.js';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import {
+  submitCode,
+  endSession,
+  toLeaderboard,
+  announceLoser,
+} from './session.js';
+import {
+  FRUITS,
+  FRUIT_KEYS,
+  SECRET_CODE,
+  SECRET_CODE_CATEGORIES,
+  SECRET_CODE_REVEAL_SEC,
+  LOSER_ANNOUNCE_SEC,
+} from './constants.js';
 import Timer from '../../components/Timer.jsx';
 import Leaderboard from '../../components/Leaderboard.jsx';
 import FruitCounts from '../../components/FruitCounts.jsx';
+import Announcement from '../../components/Announcement.jsx';
 
 const REASON_TEXT = {
   invalid: 'Code invalide.',
@@ -21,6 +34,89 @@ export default function Game({ pin, session, playerId }) {
 
   const me = session.players?.[playerId] || { points: 0, fruitCounts: {} };
   const leaderboard = toLeaderboard(session.players);
+
+  // Secret code reveal: either this player collected enough different fruit
+  // categories, or the timer dropped below the reveal threshold (then
+  // everyone sees it).
+  const foundEnoughFruits =
+    FRUIT_KEYS.filter((key) => (me.fruitCounts || {})[key] > 0).length >=
+    SECRET_CODE_CATEGORIES;
+  const [timeReveal, setTimeReveal] = useState(
+    () =>
+      !!session.endsAt &&
+      session.endsAt - Date.now() <= SECRET_CODE_REVEAL_SEC * 1000,
+  );
+  useEffect(() => {
+    if (timeReveal || !session.endsAt) return undefined;
+    const revealAt = session.endsAt - SECRET_CODE_REVEAL_SEC * 1000;
+    const check = () => {
+      if (Date.now() >= revealAt) setTimeReveal(true);
+    };
+    check();
+    const interval = setInterval(check, 1000);
+    return () => clearInterval(interval);
+  }, [session.endsAt, timeReveal]);
+  const showSecretCode = foundEnoughFruits || timeReveal;
+
+  // Watch every player's node for a broadcast announcement and show new ones.
+  const [announce, setAnnounce] = useState(null);
+  const seenAnnRef = useRef(null);
+  useEffect(() => {
+    const anns = Object.values(session.players || {})
+      .map((p) => p.announce)
+      .filter(Boolean);
+    if (seenAnnRef.current === null) seenAnnRef.current = new Set();
+    // Ignore stale announcements (from before this device loaded), but still show
+    // one from the last ~15s even if the page just opened. Each shows only once.
+    const RECENT_MS = 15000;
+    anns.forEach((a) => {
+      if (Date.now() - a.at > RECENT_MS) seenAnnRef.current.add(a.at);
+    });
+    const fresh = anns
+      .filter((a) => !seenAnnRef.current.has(a.at))
+      .sort((x, y) => y.at - x.at);
+    if (fresh.length) {
+      fresh.forEach((a) => seenAnnRef.current.add(a.at));
+      setAnnounce(fresh[0]);
+    }
+  }, [session.players]);
+
+  useEffect(() => {
+    if (!announce) return undefined;
+    const t = setTimeout(() => setAnnounce(null), 6000);
+    return () => clearTimeout(t);
+  }, [announce]);
+
+  // Every LOSER_ANNOUNCE_SEC, call out the player currently in last place.
+  // Each client checks each boundary; only the loser's own device broadcasts
+  // (players may only write their own node). Ties for last (or a session
+  // where everyone is equal) announce nobody. The boundary must be fresh
+  // (< 5s old) so a page reload doesn't replay an old call-out.
+  const loserBoundaryRef = useRef(0);
+  useEffect(() => {
+    if (session.status !== 'playing' || !session.startedAt) return undefined;
+    const periodMs = LOSER_ANNOUNCE_SEC * 1000;
+    const check = () => {
+      const now = Date.now();
+      if (session.endsAt && now >= session.endsAt) return;
+      const k = Math.floor((now - session.startedAt) / periodMs);
+      if (k < 1 || k <= loserBoundaryRef.current) return;
+      loserBoundaryRef.current = k;
+      if (now - (session.startedAt + k * periodMs) > 5000) return;
+      const ranked = toLeaderboard(session.players);
+      if (ranked.length < 2) return;
+      const last = ranked[ranked.length - 1];
+      const isStrictLast = ranked.filter(
+        (p) => (p.points || 0) === (last.points || 0),
+      ).length === 1;
+      if (isStrictLast && last.id === playerId) {
+        announceLoser(pin, playerId, last.name).catch(() => {});
+      }
+    };
+    check();
+    const interval = setInterval(check, 1000);
+    return () => clearInterval(interval);
+  }, [session.status, session.startedAt, session.endsAt, session.players, pin, playerId]);
 
   const handleExpire = useCallback(async () => {
     if (endingRef.current) return;
@@ -41,13 +137,20 @@ export default function Game({ pin, session, playerId }) {
     try {
       const res = await submitCode(pin, playerId, value);
       if (res.ok) {
-        const fruit = FRUITS[res.fruit];
-        setFeedback({
-          type: 'ok',
-          text:
-            `${fruit.emoji} ${fruit.label} +${res.awarded}` +
-            (res.multiplier > 1 ? ` (combo ×${res.multiplier}!)` : ''),
-        });
+        if (res.kind === 'special') {
+          setFeedback({
+            type: res.awarded < 0 ? 'err' : 'ok',
+            text: `${res.announcement.emoji} ${res.awarded < 0 ? '' : '+'}${res.awarded}`,
+          });
+        } else {
+          const fruit = FRUITS[res.fruit];
+          setFeedback({
+            type: 'ok',
+            text:
+              `${fruit.emoji} ${fruit.label} +${res.awarded}` +
+              (res.multiplier > 1 ? ` (combo ×${res.multiplier}!)` : ''),
+          });
+        }
         setCode('');
       } else {
         setFeedback({ type: 'err', text: REASON_TEXT[res.reason] || 'Erreur.' });
@@ -59,6 +162,7 @@ export default function Game({ pin, session, playerId }) {
 
   return (
     <div className="screen game">
+      <Announcement announce={announce} />
       <div className="game__topbar">
         <Timer endsAt={session.endsAt} onExpire={handleExpire} />
         <div className="game__score">
@@ -74,7 +178,7 @@ export default function Game({ pin, session, playerId }) {
           autoComplete="off"
           autoCapitalize="characters"
           value={code}
-          placeholder="Entrer un code (ex : MANG7)"
+          placeholder="Code (ex : MAN7)"
           onChange={(e) => setCode(e.target.value.toUpperCase())}
         />
         <button type="submit" className="btn btn--primary" disabled={busy}>
@@ -84,6 +188,17 @@ export default function Game({ pin, session, playerId }) {
 
       {feedback && (
         <p className={`feedback feedback--${feedback.type}`}>{feedback.text}</p>
+      )}
+
+      {showSecretCode && (
+        <div className="secret-code">
+          <span className="secret-code__label">
+            {foundEnoughFruits
+              ? `🏆 ${SECRET_CODE_CATEGORIES} catégories trouvées ! Code secret :`
+              : '⏳ Code secret révélé :'}
+          </span>
+          <span className="secret-code__value">{SECRET_CODE}</span>
+        </div>
       )}
 
       <section className="game__section">
