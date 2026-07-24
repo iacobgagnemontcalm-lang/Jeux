@@ -30,6 +30,16 @@ export const GAMES = [
     accent: '#d50a0a',
     enabled: true,
   },
+  {
+    id: 'combine',
+    name: 'Combine',
+    description:
+      '8 défis athlétiques en vrai : roue des points, vote du défi, résultats et podium en direct.',
+    path: '/combine',
+    emoji: '🏆',
+    accent: '#2ea36b',
+    enabled: true,
+  },
   // Example of a future, not-yet-available game:
   // {
   //   id: 'prochain-jeu',

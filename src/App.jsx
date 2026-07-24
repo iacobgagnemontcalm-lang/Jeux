@@ -5,6 +5,7 @@ import GameSelect from './pages/GameSelect.jsx';
 import FruitInterdit from './games/fruit-interdit/FruitInterdit.jsx';
 import SoccerCars from './games/soccer-cars/SoccerCars.jsx';
 import SpinTheWheel from './games/spin-the-wheel/SpinTheWheel.jsx';
+import Combine from './games/combine/Combine.jsx';
 
 function Notice({ title, children }) {
   return (
@@ -70,6 +71,14 @@ export default function App() {
           element={
             <RequireFirebase>
               <SpinTheWheel />
+            </RequireFirebase>
+          }
+        />
+        <Route
+          path="/combine/*"
+          element={
+            <RequireFirebase>
+              <Combine />
             </RequireFirebase>
           }
         />

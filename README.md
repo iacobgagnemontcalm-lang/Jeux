@@ -2,7 +2,7 @@
 
 A web app that hosts multiple party games. The home screen lists the available
 games as buttons; picking one opens it. Current games: **Fruit Interdit**,
-**Turbo Soccer** and **Spin the Wheel**.
+**Turbo Soccer**, **Spin the Wheel** and **Combine**.
 
 Built with **React + Vite** and backed by **Firebase Realtime Database** for live,
 cross-device sync (shared leaderboard, timer, code claiming).
@@ -110,6 +110,42 @@ Rosters and projections come from the public [Sleeper API](https://docs.sleeper.
 (no key needed). Everything lives in `src/games/spin-the-wheel/`; the realtime
 state is stored under `wheelSessions/$pin` (see `database.rules.json` — deploy
 the rules with `firebase deploy --only database` before the first game).
+
+## Combine 🏆
+
+A real-life mini-Combine you run with friends: **8 athletic challenges** —
+Bench Press, 40 yds Dash, Broad Jump, Longest Throw, Longest Punt, Precision
+Throws, Parcours and Quiz. One person creates a session and shares the 4-digit
+PIN; up to 12 players join with a nickname.
+
+### Flow (per challenge)
+
+1. **Scoring wheel** — the host spins a wheel that lands on **30, 20 or 12**
+   points for 1st place. Each place below is worth **2 points less**, never
+   below 0 (e.g. base 30 → 30, 28, 26, … for a 12-player field).
+2. **Vote** — two random not-yet-played challenges plus an **Aléatoire**
+   (surprise) option are proposed. Every player votes; plurality wins and ties
+   are broken at random.
+3. **Do it in real life**, then **enter the results** — reps for Bench Press,
+   seconds for the Dash and Parcours (lowest wins), metres for the jumps and
+   throws, points for Precision, good answers for the Quiz. Each player types
+   their own result, or the host can enter/correct everyone's from one device.
+4. **Podium** — players are ranked by their raw result (respecting whether
+   bigger or smaller is better), points are awarded from the wheel's ladder and
+   added to their total, and the podium is shown before moving on.
+
+An always-on scoreboard shows every nickname with its **running total and
+current position** (#1, #2, …) at all times. After the eighth challenge a final
+podium and a recap of every challenge is shown.
+
+**Rejoin safeguard:** a player's identity is their **username**, not the
+browser. Close the tab, come back — even on another device or after clearing
+storage — enter the same nickname and PIN, and you land back on the exact same
+player with your points and standing intact.
+
+Everything lives in `src/games/combine/`; the realtime state is stored under
+`combineSessions/$pin` (see `database.rules.json` — deploy the rules with
+`firebase deploy --only database` before the first game).
 
 ## Setup
 

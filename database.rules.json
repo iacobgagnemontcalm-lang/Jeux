@@ -129,6 +129,58 @@
         }
       }
     },
+    "combineSessions": {
+      "$pin": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "status": {
+          ".validate": "newData.isString() && (newData.val() == 'lobby' || newData.val() == 'playing' || newData.val() == 'ended')"
+        },
+        "hostId": { ".validate": "newData.isString()" },
+        "hostUid": { ".validate": "newData.isString() || newData.val() == null" },
+        "createdAt": { ".validate": "newData.isNumber()" },
+        "startedAt": { ".validate": "newData.isNumber() || newData.val() == null" },
+        "challengeIndex": { ".validate": "newData.isNumber()" },
+        "order": {
+          "$i": { ".validate": "newData.isString()" }
+        },
+        "players": {
+          "$playerId": {
+            "name": { ".validate": "newData.isString() && newData.val().length <= 30" },
+            "uid": { ".validate": "newData.isString() || newData.val() == null" },
+            "joinedAt": { ".validate": "newData.isNumber()" }
+          }
+        },
+        "round": {
+          "scoreBase": { ".validate": "newData.isNumber()" },
+          "phase": {
+            ".validate": "newData.isString() && (newData.val() == 'spin' || newData.val() == 'vote' || newData.val() == 'enter' || newData.val() == 'podium')"
+          },
+          "challengeId": { ".validate": "newData.isString() || newData.val() == null" },
+          "votes": {
+            "$playerId": { ".validate": "newData.isNumber()" }
+          },
+          "results": {
+            "$playerId": { ".validate": "newData.isNumber()" }
+          },
+          "points": {
+            "$playerId": { ".validate": "newData.isNumber()" }
+          }
+        },
+        "rounds": {
+          "$index": {
+            "challengeId": { ".validate": "newData.isString() || newData.val() == null" },
+            "scoreBase": { ".validate": "newData.isNumber()" },
+            "results": {
+              "$playerId": { ".validate": "newData.isNumber()" }
+            },
+            "points": {
+              "$playerId": { ".validate": "newData.isNumber()" }
+            }
+          }
+        }
+      }
+    },
     "wheelBests": {
       ".read": "auth != null",
       "$nameKey": {
