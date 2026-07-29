@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { startSession, toPlayerList } from './session.js';
-import { CHALLENGES, MAX_PLAYERS, SCORE_BASES } from './constants.js';
+import {
+  CHALLENGES,
+  MAX_PLAYERS,
+  MAX_PREDICTIONS,
+  PREDICTION_BONUS,
+  SCORE_BASES,
+} from './constants.js';
 
 export default function Lobby({ pin, session, playerId }) {
   const [busy, setBusy] = useState(false);
@@ -41,8 +47,14 @@ export default function Lobby({ pin, session, playerId }) {
         </ul>
         <p className="muted cmb-hint">
           Avant chaque défi, la roue tire {SCORE_BASES.join(', ')} pour la 1ʳᵉ
-          place, puis −2 par place. Deux défis au hasard (+ Aléatoire) sont
-          proposés au vote.
+          place, puis −1 dixième du total par place (30 → 27 → 24, 20 → 18 → 16,
+          12 → 11 → 10). Deux défis au hasard (+ Aléatoire) sont proposés au
+          vote. Au Quiz, chacun entre sa place et non ses points.
+        </p>
+        <p className="muted cmb-hint">
+          🔮 Avant chaque défi, vous pouvez annoncer la place exacte que vous
+          allez terminer : {PREDICTION_BONUS} pts si vous visez juste, 0 sinon.{' '}
+          {MAX_PREDICTIONS} pronostics par joueur pour toute la partie.
         </p>
       </section>
 

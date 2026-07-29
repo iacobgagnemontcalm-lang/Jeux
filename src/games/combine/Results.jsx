@@ -1,5 +1,11 @@
 import { Link } from 'react-router-dom';
-import { standings, challengeById, rankResults } from './constants.js';
+import {
+  standings,
+  challengeById,
+  rankResults,
+  MAX_PREDICTIONS,
+  PREDICTION_BONUS,
+} from './constants.js';
 
 export default function Results({ session, playerId }) {
   const rows = standings(session);
@@ -7,6 +13,19 @@ export default function Results({ session, playerId }) {
   const players = session.players || {};
   const roundKeys = Object.keys(rounds).sort((a, b) => Number(a) - Number(b));
   const podium = rows.slice(0, 3);
+
+  // Prediction tally: how many calls each player made and how many landed.
+  const calls = rows
+    .map((row) => {
+      let used = 0;
+      let hit = 0;
+      for (const r of Object.values(rounds)) {
+        if (typeof r?.predictions?.[row.playerId] === 'number') used += 1;
+        if (r?.bonuses?.[row.playerId] > 0) hit += 1;
+      }
+      return { ...row, used, hit };
+    })
+    .filter((row) => row.used > 0);
 
   const medal = (pos) => (pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : `#${pos}`);
 
@@ -40,6 +59,27 @@ export default function Results({ session, playerId }) {
           </li>
         ))}
       </ol>
+
+      {calls.length > 0 && (
+        <section>
+          <h2>Pronostics 🔮</h2>
+          <div className="cmb-recap">
+            {calls.map((row) => (
+              <div key={row.playerId} className="cmb-recap__row">
+                <span className="cmb-recap__emoji">🔮</span>
+                <span className="cmb-recap__label">{row.name}</span>
+                <span className="cmb-recap__base">
+                  {row.used}/{MAX_PREDICTIONS} utilisés
+                </span>
+                <span className="cmb-recap__winner">
+                  {row.hit} réussi{row.hit > 1 ? 's' : ''} · +
+                  {row.hit * PREDICTION_BONUS} pts
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {roundKeys.length > 0 && (
         <section>

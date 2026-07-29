@@ -10,6 +10,8 @@ export const MAX_PLAYERS = 12;
 
 // The eight challenges, in their canonical order. `direction` says whether a
 // bigger raw result is better ('high') or a smaller one is ('low', e.g. a time).
+// `entry: 'rank'` means players type their placing (1ʳᵉ, 2ᵉ, …) instead of a
+// raw measurement.
 export const CHALLENGES = [
   { id: 'bench', label: 'Bench Press', emoji: '🏋️', unit: 'répétitions', short: 'reps', direction: 'high', step: 1 },
   { id: 'dash', label: '40 yds Dash', emoji: '🏃', unit: 'secondes', short: 's', direction: 'low', step: 0.01 },
@@ -18,7 +20,7 @@ export const CHALLENGES = [
   { id: 'punt', label: 'Longest Punt', emoji: '🦶', unit: 'mètres', short: 'm', direction: 'high', step: 0.1 },
   { id: 'precision', label: 'Precision Throws', emoji: '🎯', unit: 'points', short: 'pts', direction: 'high', step: 1 },
   { id: 'parcours', label: 'Parcours', emoji: '🚧', unit: 'secondes', short: 's', direction: 'low', step: 0.01 },
-  { id: 'quiz', label: 'Quiz', emoji: '🧠', unit: 'bonnes réponses', short: 'bonnes', direction: 'high', step: 1 },
+  { id: 'quiz', label: 'Quiz', emoji: '🧠', unit: 'position au quiz', short: '', direction: 'low', step: 1, entry: 'rank' },
 ];
 
 export const TOTAL_CHALLENGES = CHALLENGES.length;
@@ -28,7 +30,8 @@ export function challengeById(id) {
 }
 
 // The scoring wheel: it lands on a base value, then each place below the top
-// is worth 2 points less (never below 0).
+// is worth one "step" less (never below 0). The step scales with the base —
+// a tenth of it — so the ladders are 30/27/24…, 20/18/16… and 12/11/10….
 export const SCORE_BASES = [30, 20, 12];
 
 export const SCORE_COLORS = {
@@ -37,8 +40,12 @@ export const SCORE_COLORS = {
   12: '#c9873f', // bronze
 };
 
+export function stepForBase(base) {
+  return Math.max(1, Math.round((base || 0) / 10));
+}
+
 export function pointsForRank(base, rank) {
-  return Math.max(0, base - 2 * (rank - 1));
+  return Math.max(0, base - stepForBase(base) * (rank - 1));
 }
 
 // Preview of the point ladder for a base and a player count: [30,28,26,…].
@@ -75,6 +82,46 @@ export function computeRoundPoints(base, ranked) {
   const points = {};
   for (const r of ranked) points[r.playerId] = pointsForRank(base, r.rank);
   return points;
+}
+
+// --- Position predictions ---
+// Before each challenge a player may call their exact finishing position.
+// Nail it and it is worth PREDICTION_BONUS points; miss and it is worth
+// nothing. Each player gets MAX_PREDICTIONS calls for the whole Combine.
+export const MAX_PREDICTIONS = 3;
+export const PREDICTION_BONUS = 5;
+
+// How many predictions a player has already spent (committed rounds only).
+export function predictionsUsed(session, playerId) {
+  return Object.values(session?.rounds || {}).filter(
+    (r) => typeof r?.predictions?.[playerId] === 'number',
+  ).length;
+}
+
+export function predictionsLeft(session, playerId) {
+  return Math.max(0, MAX_PREDICTIONS - predictionsUsed(session, playerId));
+}
+
+// Bonus points from the calls: { playerId: PREDICTION_BONUS } for exact hits.
+export function computePredictionBonuses(ranked, predictions) {
+  const bonuses = {};
+  for (const r of ranked) {
+    if (predictions?.[r.playerId] === r.rank) bonuses[r.playerId] = PREDICTION_BONUS;
+  }
+  return bonuses;
+}
+
+// "1ʳᵉ", "2ᵉ", "3ᵉ", …
+export function ordinalFr(n) {
+  return n === 1 ? '1ʳᵉ' : `${n}ᵉ`;
+}
+
+// A raw result the way it should read on screen: a placing for rank-entry
+// challenges (the Quiz), the plain number + unit for everything else.
+export function formatResult(challenge, value) {
+  if (value == null || !Number.isFinite(value)) return '—';
+  if (challenge?.entry === 'rank') return ordinalFr(value);
+  return `${value}${challenge?.short ? ` ${challenge.short}` : ''}`;
 }
 
 function shuffle(arr) {

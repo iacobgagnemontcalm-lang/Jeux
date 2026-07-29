@@ -9,6 +9,8 @@ import {
   randomRemaining,
   rankResults,
   computeRoundPoints,
+  computePredictionBonuses,
+  predictionsLeft,
   challengeById,
 } from './constants.js';
 
@@ -122,8 +124,8 @@ export async function castVote(pin, playerId, optionIndex) {
   });
 }
 
-// 3. Resolve the vote to a challenge and open result entry. Plurality wins;
-// ties (including "nobody voted") are broken at random by the host.
+// 3. Resolve the vote to a challenge and open the prediction window. Plurality
+// wins; ties (including "nobody voted") are broken at random by the host.
 export async function resolveVote(pin, session) {
   const options = session.round?.options || [];
   const votes = session.round?.votes || {};
@@ -141,11 +143,28 @@ export async function resolveVote(pin, session) {
   const challengeId = optionValue === 'random' ? randomRemaining(session) : optionValue;
 
   await update(ref(db, `${BASE}/${pin}`), {
-    'round/phase': 'enter',
+    'round/phase': 'predict',
     'round/challengeId': challengeId,
+    'round/predictions': null,
     'round/results': null,
     'round/points': null,
+    'round/bonuses': null,
   });
+}
+
+// A player calls (or takes back) the exact position they think they will
+// finish this challenge in. `position` of null clears the call — nothing is
+// spent until the round is committed.
+export async function setPrediction(pin, session, playerId, position) {
+  if (position != null && predictionsLeft(session, playerId) <= 0) return;
+  await update(ref(db, `${BASE}/${pin}`), {
+    [`round/predictions/${playerId}`]: position,
+  });
+}
+
+// 4. Predictions are locked in — open the result entry.
+export async function openEntry(pin) {
+  await update(ref(db, `${BASE}/${pin}`), { 'round/phase': 'enter' });
 }
 
 // A player enters (or corrects) their own raw result.
@@ -155,30 +174,40 @@ export async function submitResult(pin, playerId, value) {
   });
 }
 
-// 4. Compute the points for this challenge and commit them to `rounds`
+// 5. Compute the points for this challenge and commit them to `rounds`
 // (idempotent: recomputing overwrites the same round slot, so tapping twice
-// never double-counts).
+// never double-counts). `points` is the placing points plus any prediction
+// bonus, so the standings need no special case.
 export async function revealPodium(pin, session) {
   const index = session.challengeIndex || 0;
   const challenge = challengeById(session.round?.challengeId);
   const base = session.round?.scoreBase || 0;
   const results = session.round?.results || {};
+  const predictions = session.round?.predictions || {};
   const ranked = rankResults(challenge, results);
-  const points = computeRoundPoints(base, ranked);
+  const placePoints = computeRoundPoints(base, ranked);
+  const bonuses = computePredictionBonuses(ranked, predictions);
+  const points = { ...placePoints };
+  for (const [pid, bonus] of Object.entries(bonuses)) {
+    points[pid] = (points[pid] || 0) + bonus;
+  }
 
   await update(ref(db, `${BASE}/${pin}`), {
     [`rounds/${index}`]: {
       challengeId: challenge?.id || null,
       scoreBase: base,
       results,
+      predictions,
+      bonuses,
       points,
     },
     'round/points': points,
+    'round/bonuses': bonuses,
     'round/phase': 'podium',
   });
 }
 
-// 5. Advance to the next challenge, or end the game after the eighth.
+// 6. Advance to the next challenge, or end the game after the eighth.
 export async function nextChallenge(pin, session) {
   const nextIndex = (session.challengeIndex || 0) + 1;
   if (nextIndex >= TOTAL_CHALLENGES) {

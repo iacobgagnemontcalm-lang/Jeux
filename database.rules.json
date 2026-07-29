@@ -154,14 +154,20 @@
         "round": {
           "scoreBase": { ".validate": "newData.isNumber()" },
           "phase": {
-            ".validate": "newData.isString() && (newData.val() == 'spin' || newData.val() == 'vote' || newData.val() == 'enter' || newData.val() == 'podium')"
+            ".validate": "newData.isString() && (newData.val() == 'spin' || newData.val() == 'vote' || newData.val() == 'predict' || newData.val() == 'enter' || newData.val() == 'podium')"
           },
           "challengeId": { ".validate": "newData.isString() || newData.val() == null" },
           "votes": {
             "$playerId": { ".validate": "newData.isNumber()" }
           },
+          "predictions": {
+            "$playerId": { ".validate": "newData.isNumber() && newData.val() >= 1" }
+          },
           "results": {
             "$playerId": { ".validate": "newData.isNumber()" }
+          },
+          "bonuses": {
+            "$playerId": { ".validate": "newData.isNumber() && newData.val() >= 0" }
           },
           "points": {
             "$playerId": { ".validate": "newData.isNumber()" }
@@ -173,6 +179,12 @@
             "scoreBase": { ".validate": "newData.isNumber()" },
             "results": {
               "$playerId": { ".validate": "newData.isNumber()" }
+            },
+            "predictions": {
+              "$playerId": { ".validate": "newData.isNumber() && newData.val() >= 1" }
+            },
+            "bonuses": {
+              "$playerId": { ".validate": "newData.isNumber() && newData.val() >= 0" }
             },
             "points": {
               "$playerId": { ".validate": "newData.isNumber()" }

@@ -6,6 +6,8 @@ import {
   openVote,
   castVote,
   resolveVote,
+  setPrediction,
+  openEntry,
   submitResult,
   revealPodium,
   nextChallenge,
@@ -16,10 +18,16 @@ import {
   SCORE_BASES,
   SCORE_COLORS,
   SPIN_MS,
+  MAX_PREDICTIONS,
+  PREDICTION_BONUS,
   challengeById,
+  formatResult,
+  ordinalFr,
   pointLadder,
   pointsForRank,
+  predictionsLeft,
   rankResults,
+  stepForBase,
 } from './constants.js';
 
 const OPTION_RANDOM = 'random';
@@ -45,6 +53,9 @@ export default function Game({ pin, session, playerId }) {
       )}
       {phase === 'vote' && (
         <VotePhase pin={pin} session={session} playerId={playerId} isHost={isHost} />
+      )}
+      {phase === 'predict' && (
+        <PredictPhase pin={pin} session={session} playerId={playerId} isHost={isHost} />
       )}
       {phase === 'enter' && (
         <EnterPhase pin={pin} session={session} playerId={playerId} isHost={isHost} />
@@ -83,8 +94,8 @@ function SpinPhase({ pin, session, isHost }) {
     <section className="cmb-phase">
       <h2>Roue des points</h2>
       <p className="muted cmb-hint">
-        La roue décide combien vaut la 1ʳᵉ place. Chaque place suivante vaut 2
-        points de moins.
+        La roue décide combien vaut la 1ʳᵉ place. Chaque place suivante vaut un
+        dixième de ce total en moins : 30 → 27 → 24, 20 → 18 → 16, 12 → 11 → 10.
       </p>
 
       <Wheel items={items} spin={spin} targetIndex={targetIndex} onSettled={() => setSettled(true)} icon="🎯" />
@@ -92,7 +103,9 @@ function SpinPhase({ pin, session, isHost }) {
       {spin && settled && base && (
         <div className="cmb-result-card">
           <span className="cmb-result-card__big">{base} pts</span>
-          <span className="cmb-result-card__sub">pour la 1ʳᵉ place</span>
+          <span className="cmb-result-card__sub">
+            pour la 1ʳᵉ place · −{stepForBase(base)} par place
+          </span>
           <div className="cmb-ladder">
             {pointLadder(base, players.length).map((p, i) => (
               <span key={i} className="cmb-ladder__step">
@@ -194,7 +207,120 @@ function VotePhase({ pin, session, playerId, isHost }) {
   );
 }
 
-// --- Phase 3: enter the real-life results ---
+// --- Phase 3: call your finishing position (optional, 3 times per Combine) ---
+function PredictPhase({ pin, session, playerId, isHost }) {
+  const challenge = challengeById(session.round?.challengeId);
+  const base = session.round?.scoreBase || 0;
+  const predictions = session.round?.predictions || {};
+  const players = toPlayerList(session);
+  const mine = predictions[playerId];
+  const left = predictionsLeft(session, playerId);
+  const spent = mine != null ? Math.max(0, left - 1) : left;
+  const called = players.filter((p) => typeof predictions[p.id] === 'number').length;
+
+  const choose = (pos) => {
+    setPrediction(pin, session, playerId, mine === pos ? null : pos);
+  };
+
+  return (
+    <section className="cmb-phase">
+      <div className="cmb-challenge-head">
+        <span className="cmb-challenge-head__emoji">{challenge?.emoji}</span>
+        <div>
+          <h2>{challenge?.label}</h2>
+          <p className="muted">{base} pts pour la 1ʳᵉ place</p>
+        </div>
+      </div>
+
+      <h3 className="cmb-predict__title">Votre pronostic 🔮</h3>
+      <p className="muted cmb-hint">
+        Annoncez la place exacte que vous allez terminer. Juste : +
+        {PREDICTION_BONUS} pts. Raté : 0 pt. Vous avez droit à{' '}
+        {MAX_PREDICTIONS} pronostics pour tout le Combine.
+      </p>
+
+      <div className="cmb-predict-grid">
+        {players.map((_, i) => {
+          const pos = i + 1;
+          const isMine = mine === pos;
+          return (
+            <button
+              key={pos}
+              type="button"
+              className={`cmb-predict__btn${isMine ? ' is-mine' : ''}`}
+              disabled={left <= 0 && !isMine}
+              onClick={() => choose(pos)}
+            >
+              {ordinalFr(pos)}
+            </button>
+          );
+        })}
+      </div>
+
+      <p className="muted cmb-hint">
+        {mine != null ? (
+          <>
+            Vous annoncez la <b>{ordinalFr(mine)}</b> place — touchez à nouveau
+            pour annuler. Il vous restera {spent} pronostic{spent > 1 ? 's' : ''}.
+          </>
+        ) : left > 0 ? (
+          <>
+            Aucun pronostic pour ce défi — il vous en reste {left} sur{' '}
+            {MAX_PREDICTIONS}.
+          </>
+        ) : (
+          <>Vos {MAX_PREDICTIONS} pronostics sont déjà utilisés.</>
+        )}
+      </p>
+
+      <p className="muted cmb-hint">
+        {called} / {players.length} ont annoncé une place (les choix restent
+        secrets jusqu'au podium)
+      </p>
+
+      {isHost ? (
+        <button
+          type="button"
+          className="btn btn--primary btn--big"
+          onClick={() => openEntry(pin)}
+        >
+          Verrouiller → au défi !
+        </button>
+      ) : (
+        <p className="muted waiting">
+          L'hôte verrouillera les pronostics avant le défi…
+        </p>
+      )}
+    </section>
+  );
+}
+
+// --- Phase 4: enter the real-life results ---
+function RankInput({ name, stored, count, onSave, big }) {
+  return (
+    <div className={`cmb-entry${big ? ' cmb-entry--big' : ''}`}>
+      <span className="cmb-entry__name">{name}</span>
+      <select
+        className="cmb-rank-select"
+        value={stored != null ? String(stored) : ''}
+        onChange={(e) => {
+          const num = parseInt(e.target.value, 10);
+          if (Number.isFinite(num)) onSave(num);
+        }}
+      >
+        <option value="" disabled>
+          Place…
+        </option>
+        {Array.from({ length: count }, (_, i) => (
+          <option key={i + 1} value={i + 1}>
+            {ordinalFr(i + 1)}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function ResultInput({ challenge, name, stored, onSave, big }) {
   const [value, setValue] = useState(stored != null ? String(stored) : '');
   const [saved, setSaved] = useState(false);
@@ -236,9 +362,33 @@ function EnterPhase({ pin, session, playerId, isHost }) {
   const challenge = challengeById(session.round?.challengeId);
   const base = session.round?.scoreBase || 0;
   const results = session.round?.results || {};
+  const predictions = session.round?.predictions || {};
   const players = toPlayerList(session);
   const me = players.find((p) => p.id === playerId);
   const entered = players.filter((p) => typeof results[p.id] === 'number').length;
+  const byRank = challenge?.entry === 'rank';
+  const myCall = predictions[playerId];
+
+  const inputFor = (p, big) =>
+    byRank ? (
+      <RankInput
+        key={p.id}
+        name={big ? `Votre place (${p.name})` : p.name}
+        stored={results[p.id]}
+        count={players.length}
+        onSave={(v) => submitResult(pin, p.id, v)}
+        big={big}
+      />
+    ) : (
+      <ResultInput
+        key={p.id}
+        challenge={challenge}
+        name={big ? `Votre résultat (${p.name})` : p.name}
+        stored={results[p.id]}
+        onSave={(v) => submitResult(pin, p.id, v)}
+        big={big}
+      />
+    );
 
   return (
     <section className="cmb-phase">
@@ -247,37 +397,37 @@ function EnterPhase({ pin, session, playerId, isHost }) {
         <div>
           <h2>{challenge?.label}</h2>
           <p className="muted">
-            Résultat en {challenge?.unit} · {base} pts pour la 1ʳᵉ place ·{' '}
-            {challenge?.direction === 'low' ? 'le plus petit gagne' : 'le plus grand gagne'}
+            {byRank ? (
+              <>Entrez votre place au quiz · {base} pts pour la 1ʳᵉ place</>
+            ) : (
+              <>
+                Résultat en {challenge?.unit} · {base} pts pour la 1ʳᵉ place ·{' '}
+                {challenge?.direction === 'low'
+                  ? 'le plus petit gagne'
+                  : 'le plus grand gagne'}
+              </>
+            )}
           </p>
         </div>
       </div>
 
-      {me && (
-        <ResultInput
-          challenge={challenge}
-          name={`Votre résultat (${me.name})`}
-          stored={results[playerId]}
-          onSave={(v) => submitResult(pin, playerId, v)}
-          big
-        />
+      {myCall != null && (
+        <p className="cmb-predict-badge">
+          🔮 Vous avez annoncé la {ordinalFr(myCall)} place
+        </p>
       )}
 
-      <p className="muted cmb-hint">{entered} / {players.length} résultats entrés</p>
+      {me && inputFor(me, true)}
+
+      <p className="muted cmb-hint">
+        {entered} / {players.length} {byRank ? 'places entrées' : 'résultats entrés'}
+      </p>
 
       {isHost && (
         <details className="cmb-host-panel" open>
           <summary>Entrer / corriger pour tout le monde</summary>
           <div className="cmb-entry-list">
-            {players.map((p) => (
-              <ResultInput
-                key={p.id}
-                challenge={challenge}
-                name={p.name}
-                stored={results[p.id]}
-                onSave={(v) => submitResult(pin, p.id, v)}
-              />
-            ))}
+            {players.map((p) => inputFor(p, false))}
           </div>
         </details>
       )}
@@ -298,16 +448,19 @@ function EnterPhase({ pin, session, playerId, isHost }) {
   );
 }
 
-// --- Phase 4: the podium for this challenge ---
+// --- Phase 5: the podium for this challenge ---
 function PodiumPhase({ pin, session, isHost }) {
   const challenge = challengeById(session.round?.challengeId);
   const results = session.round?.results || {};
   const points = session.round?.points || {};
+  const predictions = session.round?.predictions || {};
+  const bonuses = session.round?.bonuses || {};
   const base = session.round?.scoreBase || 0;
   const players = session.players || {};
   const ranked = rankResults(challenge, results);
   const index = session.challengeIndex || 0;
   const isLast = index + 1 >= TOTAL_CHALLENGES;
+  const anyCall = ranked.some((r) => predictions[r.playerId] != null);
 
   return (
     <section className="cmb-phase">
@@ -320,17 +473,35 @@ function PodiumPhase({ pin, session, isHost }) {
       </div>
 
       <ol className="cmb-podium">
-        {ranked.map((r) => (
-          <li key={r.playerId} className={`cmb-podium__row cmb-pos--${r.rank}`}>
-            <span className={`cmb-pos cmb-pos--${r.rank}`}>#{r.rank}</span>
-            <span className="cmb-podium__name">{players[r.playerId]?.name || r.playerId}</span>
-            <span className="cmb-podium__raw">
-              {r.value} {challenge?.short}
-            </span>
-            <span className="cmb-podium__pts">+{points[r.playerId] ?? pointsForRank(base, r.rank)} pts</span>
-          </li>
-        ))}
+        {ranked.map((r) => {
+          const call = predictions[r.playerId];
+          const hit = bonuses[r.playerId] > 0;
+          return (
+            <li key={r.playerId} className={`cmb-podium__row cmb-pos--${r.rank}`}>
+              <span className={`cmb-pos cmb-pos--${r.rank}`}>#{r.rank}</span>
+              <span className="cmb-podium__name">
+                {players[r.playerId]?.name || r.playerId}
+                {call != null && (
+                  <span className={`cmb-call${hit ? ' is-hit' : ' is-miss'}`}>
+                    🔮 {ordinalFr(call)} {hit ? `+${PREDICTION_BONUS}` : '✗'}
+                  </span>
+                )}
+              </span>
+              <span className="cmb-podium__raw">{formatResult(challenge, r.value)}</span>
+              <span className="cmb-podium__pts">
+                +{points[r.playerId] ?? pointsForRank(base, r.rank)} pts
+              </span>
+            </li>
+          );
+        })}
       </ol>
+
+      {anyCall && (
+        <p className="muted cmb-hint">
+          🔮 = pronostic annoncé avant le défi ({PREDICTION_BONUS} pts si la
+          place est exacte)
+        </p>
+      )}
 
       {isHost ? (
         <button

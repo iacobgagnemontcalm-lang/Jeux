@@ -121,18 +121,26 @@ PIN; up to 12 players join with a nickname.
 ### Flow (per challenge)
 
 1. **Scoring wheel** — the host spins a wheel that lands on **30, 20 or 12**
-   points for 1st place. Each place below is worth **2 points less**, never
-   below 0 (e.g. base 30 → 30, 28, 26, … for a 12-player field).
+   points for 1st place. Each place below is worth **a tenth of the base less**,
+   never below 0: 30 → 30, 27, 24, 21, …, 20 → 20, 18, 16, 14, … and
+   12 → 12, 11, 10, 9, ….
 2. **Vote** — two random not-yet-played challenges plus an **Aléatoire**
    (surprise) option are proposed. Every player votes; plurality wins and ties
    are broken at random.
-3. **Do it in real life**, then **enter the results** — reps for Bench Press,
+3. **Prediction 🔮** — before the challenge starts, each player may call the
+   **exact position** they think they will finish in (1st, 5th, last, …).
+   Nail it and it is worth **+5 points**; miss and it is worth nothing. Every
+   player gets **3 calls for the whole Combine**, and the calls stay secret
+   until the podium. Skipping a challenge costs nothing.
+4. **Do it in real life**, then **enter the results** — reps for Bench Press,
    seconds for the Dash and Parcours (lowest wins), metres for the jumps and
-   throws, points for Precision, good answers for the Quiz. Each player types
-   their own result, or the host can enter/correct everyone's from one device.
-4. **Podium** — players are ranked by their raw result (respecting whether
-   bigger or smaller is better), points are awarded from the wheel's ladder and
-   added to their total, and the podium is shown before moving on.
+   throws, points for Precision. The **Quiz is entered as a placing** (1ʳᵉ, 2ᵉ,
+   …) rather than a score. Each player types their own result, or the host can
+   enter/correct everyone's from one device.
+5. **Podium** — players are ranked by their raw result (respecting whether
+   bigger or smaller is better), points are awarded from the wheel's ladder plus
+   any prediction bonus, added to their total, and the podium is shown before
+   moving on.
 
 An always-on scoreboard shows every nickname with its **running total and
 current position** (#1, #2, …) at all times. After the eighth challenge a final
