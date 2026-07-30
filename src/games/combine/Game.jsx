@@ -208,19 +208,68 @@ function VotePhase({ pin, session, playerId, isHost }) {
 }
 
 // --- Phase 3: call your finishing position (optional, 3 times per Combine) ---
+// The picker itself, shared by the prediction phase and the result-entry phase:
+// a call can be changed or dropped right up until you enter your own result.
+function PredictionPicker({ pin, session, playerId }) {
+  const players = toPlayerList(session);
+  const mine = session.round?.predictions?.[playerId];
+  const left = predictionsLeft(session, playerId);
+  const spent = mine != null ? Math.max(0, left - 1) : left;
+
+  return (
+    <div className="cmb-predict">
+      <div className="cmb-predict-grid">
+        {players.map((_, i) => {
+          const pos = i + 1;
+          const isMine = mine === pos;
+          return (
+            <button
+              key={pos}
+              type="button"
+              className={`cmb-predict__btn${isMine ? ' is-mine' : ''}`}
+              disabled={left <= 0 && !isMine}
+              onClick={() => setPrediction(pin, session, playerId, pos)}
+            >
+              {ordinalFr(pos)}
+            </button>
+          );
+        })}
+      </div>
+
+      <button
+        type="button"
+        className={`btn cmb-predict__skip${mine == null ? ' is-mine' : ''}`}
+        onClick={() => setPrediction(pin, session, playerId, null)}
+      >
+        {mine == null ? '✓ Aucun pronostic' : 'Annuler mon pronostic'}
+      </button>
+
+      <p className="muted cmb-hint">
+        {mine != null ? (
+          <>
+            Vous annoncez la <b>{ordinalFr(mine)}</b> place. Touchez une autre
+            place pour changer. Il vous restera {spent} pronostic
+            {spent > 1 ? 's' : ''} sur {MAX_PREDICTIONS}.
+          </>
+        ) : left > 0 ? (
+          <>
+            Aucun pronostic pour ce défi — c'est facultatif, et il vous en reste{' '}
+            {left} sur {MAX_PREDICTIONS}.
+          </>
+        ) : (
+          <>Vos {MAX_PREDICTIONS} pronostics sont déjà utilisés.</>
+        )}
+      </p>
+    </div>
+  );
+}
+
 function PredictPhase({ pin, session, playerId, isHost }) {
   const challenge = challengeById(session.round?.challengeId);
   const base = session.round?.scoreBase || 0;
   const predictions = session.round?.predictions || {};
   const players = toPlayerList(session);
-  const mine = predictions[playerId];
-  const left = predictionsLeft(session, playerId);
-  const spent = mine != null ? Math.max(0, left - 1) : left;
   const called = players.filter((p) => typeof predictions[p.id] === 'number').length;
-
-  const choose = (pos) => {
-    setPrediction(pin, session, playerId, mine === pos ? null : pos);
-  };
 
   return (
     <section className="cmb-phase">
@@ -232,46 +281,15 @@ function PredictPhase({ pin, session, playerId, isHost }) {
         </div>
       </div>
 
-      <h3 className="cmb-predict__title">Votre pronostic 🔮</h3>
+      <h3 className="cmb-predict__title">Votre pronostic 🔮 (facultatif)</h3>
       <p className="muted cmb-hint">
         Annoncez la place exacte que vous allez terminer. Juste : +
         {PREDICTION_BONUS} pts. Raté : 0 pt. Vous avez droit à{' '}
-        {MAX_PREDICTIONS} pronostics pour tout le Combine.
+        {MAX_PREDICTIONS} pronostics pour tout le Combine — rien ne vous oblige
+        à en jouer un ici.
       </p>
 
-      <div className="cmb-predict-grid">
-        {players.map((_, i) => {
-          const pos = i + 1;
-          const isMine = mine === pos;
-          return (
-            <button
-              key={pos}
-              type="button"
-              className={`cmb-predict__btn${isMine ? ' is-mine' : ''}`}
-              disabled={left <= 0 && !isMine}
-              onClick={() => choose(pos)}
-            >
-              {ordinalFr(pos)}
-            </button>
-          );
-        })}
-      </div>
-
-      <p className="muted cmb-hint">
-        {mine != null ? (
-          <>
-            Vous annoncez la <b>{ordinalFr(mine)}</b> place — touchez à nouveau
-            pour annuler. Il vous restera {spent} pronostic{spent > 1 ? 's' : ''}.
-          </>
-        ) : left > 0 ? (
-          <>
-            Aucun pronostic pour ce défi — il vous en reste {left} sur{' '}
-            {MAX_PREDICTIONS}.
-          </>
-        ) : (
-          <>Vos {MAX_PREDICTIONS} pronostics sont déjà utilisés.</>
-        )}
-      </p>
+      <PredictionPicker pin={pin} session={session} playerId={playerId} />
 
       <p className="muted cmb-hint">
         {called} / {players.length} ont annoncé une place (les choix restent
@@ -284,12 +302,10 @@ function PredictPhase({ pin, session, playerId, isHost }) {
           className="btn btn--primary btn--big"
           onClick={() => openEntry(pin)}
         >
-          Verrouiller → au défi !
+          Au défi ! →
         </button>
       ) : (
-        <p className="muted waiting">
-          L'hôte verrouillera les pronostics avant le défi…
-        </p>
+        <p className="muted waiting">L'hôte va lancer le défi…</p>
       )}
     </section>
   );
@@ -411,11 +427,27 @@ function EnterPhase({ pin, session, playerId, isHost }) {
         </div>
       </div>
 
-      {myCall != null && (
-        <p className="cmb-predict-badge">
-          🔮 Vous avez annoncé la {ordinalFr(myCall)} place
-        </p>
-      )}
+      {me &&
+        (typeof results[playerId] === 'number' ? (
+          myCall != null && (
+            <p className="cmb-predict-badge">
+              🔮 Pronostic verrouillé : {ordinalFr(myCall)} place
+            </p>
+          )
+        ) : (
+          <details className="cmb-predict-panel" open>
+            <summary>
+              🔮{' '}
+              {myCall != null
+                ? `Pronostic : ${ordinalFr(myCall)} place — changer ou annuler`
+                : 'Pronostic (facultatif) — annoncer une place'}
+            </summary>
+            <p className="muted cmb-hint">
+              Modifiable tant que vous n'avez pas entré votre résultat.
+            </p>
+            <PredictionPicker pin={pin} session={session} playerId={playerId} />
+          </details>
+        ))}
 
       {me && inputFor(me, true)}
 

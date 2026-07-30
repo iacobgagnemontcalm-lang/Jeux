@@ -154,8 +154,10 @@ export async function resolveVote(pin, session) {
 
 // A player calls (or takes back) the exact position they think they will
 // finish this challenge in. `position` of null clears the call — nothing is
-// spent until the round is committed.
+// spent until the round is committed. Free to change until that player has
+// entered their own result for the challenge.
 export async function setPrediction(pin, session, playerId, position) {
+  if (typeof session?.round?.results?.[playerId] === 'number') return;
   if (position != null && predictionsLeft(session, playerId) <= 0) return;
   await update(ref(db, `${BASE}/${pin}`), {
     [`round/predictions/${playerId}`]: position,

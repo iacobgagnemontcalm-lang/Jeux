@@ -1646,6 +1646,24 @@ body {
   opacity: 0.35;
   cursor: not-allowed;
 }
+.cmb-predict__skip {
+  width: 100%;
+  font-size: 14px;
+}
+.cmb-predict__skip.is-mine {
+  border-color: var(--primary);
+  background: rgba(46, 163, 107, 0.22);
+}
+.cmb-predict-panel {
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px dashed var(--panel-border);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.cmb-predict-panel summary {
+  cursor: pointer;
+  font-weight: 700;
+}
 .cmb-predict-badge {
   margin: 0;
   background: rgba(46, 163, 107, 0.18);
