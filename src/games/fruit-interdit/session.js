@@ -9,7 +9,12 @@ import {
   runTransaction,
 } from 'firebase/database';
 import { db } from '../../firebase.js';
-import { DURATION_SEC, MAX_COMBO, FRUITS } from './constants.js';
+import {
+  DURATION_SEC,
+  MAX_COMBO,
+  FRUITS,
+  LOSER_ANNOUNCEMENT,
+} from './constants.js';
 import { parseCode } from './codes.js';
 
 // Player identity is the Firebase anonymous auth uid (see src/auth.jsx), passed
@@ -29,12 +34,12 @@ export async function createSession(hostId) {
     const sessionRef = ref(db, `sessions/${pin}`);
     const snap = await get(sessionRef);
     if (snap.exists()) continue;
-    await set(sessionRef, {
+    // update() (not set()) writes each field as its own leaf path, which the
+    // security rules grant per-field; a set() on the parent node would be denied.
+    await update(sessionRef, {
       status: 'lobby',
       hostId,
       createdAt: serverTimestamp(),
-      startedAt: null,
-      endsAt: null,
     });
     return pin;
   }
@@ -90,7 +95,7 @@ export async function endSession(pin) {
 export async function submitCode(pin, playerId, raw) {
   const parsed = parseCode(raw);
   if (!parsed) return { ok: false, reason: 'invalid' };
-  const { code, fruit } = parsed;
+  const { code } = parsed;
 
   const sessionSnap = await get(ref(db, `sessions/${pin}`));
   if (!sessionSnap.exists()) return { ok: false, reason: 'no-session' };
@@ -105,10 +110,40 @@ export async function submitCode(pin, playerId, raw) {
   );
   if (!claim.committed) return { ok: false, reason: 'used' };
 
-  // Award points + update combo on the player node.
+  const playerRef = ref(db, `sessions/${pin}/players/${playerId}`);
+
+  // Special code: flat points (possibly a penalty; score floors at 0 to
+  // satisfy the security rules) + broadcast announcement (stored on the
+  // player's own node, which every client reads — no extra rule needed).
+  if (parsed.kind === 'special') {
+    const { points, announcement } = parsed.special;
+    let text = announcement.text;
+    await runTransaction(playerRef, (p) => {
+      if (!p) return p;
+      text = announcement.text.replace('{name}', p.name || 'Un joueur');
+      return {
+        ...p,
+        points: Math.max(0, (p.points || 0) + points),
+        announce: {
+          text,
+          emoji: announcement.emoji,
+          at: Date.now(),
+        },
+      };
+    });
+    return {
+      ok: true,
+      kind: 'special',
+      awarded: points,
+      announcement: { ...announcement, text },
+    };
+  }
+
+  // Fruit code: award points (with combo multiplier) + tally, on the player node.
+  const { fruit } = parsed;
   let awarded = 0;
   let multiplier = 1;
-  await runTransaction(ref(db, `sessions/${pin}/players/${playerId}`), (p) => {
+  await runTransaction(playerRef, (p) => {
     if (!p) return p;
     const streak = p.lastFruit === fruit ? (p.comboStreak || 1) + 1 : 1;
     multiplier = Math.min(streak, MAX_COMBO);
@@ -124,7 +159,20 @@ export async function submitCode(pin, playerId, raw) {
     };
   });
 
-  return { ok: true, fruit, awarded, multiplier };
+  return { ok: true, kind: 'fruit', fruit, awarded, multiplier };
+}
+
+// Broadcast the periodic "loser" call-out. Written on the caller's own node
+// (the only one they may write), so the last-place player's device is the one
+// that announces them — every client runs the same check.
+export async function announceLoser(pin, playerId, name) {
+  await update(ref(db, `sessions/${pin}/players/${playerId}`), {
+    announce: {
+      text: LOSER_ANNOUNCEMENT.text.replace('{name}', name || 'Un joueur'),
+      emoji: LOSER_ANNOUNCEMENT.emoji,
+      at: Date.now(),
+    },
+  });
 }
 
 // --- Live subscription hook ---

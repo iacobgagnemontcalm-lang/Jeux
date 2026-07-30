@@ -2,20 +2,28 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { usePlayer } from '../../auth.jsx';
 import { createSession, sessionExists, joinSession } from './session.js';
-
-const NAME_KEY = 'fi_player_name';
+import { getStoredName, getStoredPin, rememberSession } from './identity.js';
 
 export default function Entry() {
   const navigate = useNavigate();
   const { uid } = usePlayer();
-  const [name, setName] = useState(() => localStorage.getItem(NAME_KEY) || '');
+  const [name, setName] = useState(() => getStoredName());
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const rememberName = (value) => {
+  const lastPin = getStoredPin();
+  const lastName = getStoredName();
+  const canResume = Boolean(lastPin && lastName);
+
+  const setNameRemembered = (value) => {
     setName(value);
-    localStorage.setItem(NAME_KEY, value.trim());
+    rememberSession(value, null);
+  };
+
+  const go = (targetPin) => {
+    rememberSession(name, targetPin);
+    navigate(`/combine/${targetPin}`);
   };
 
   const handleCreate = async () => {
@@ -23,10 +31,10 @@ export default function Entry() {
     setError('');
     setBusy(true);
     try {
-      const newPin = await createSession(uid);
-      const res = await joinSession(newPin, uid, name);
+      const newPin = await createSession(name, uid);
+      const res = await joinSession(newPin, name, uid);
       if (!res.ok) throw new Error('Impossible de rejoindre la session créée.');
-      navigate(`/fruit-interdit/${newPin}`);
+      go(newPin);
     } catch (e) {
       setError(e.message || 'Erreur lors de la création.');
     } finally {
@@ -34,27 +42,27 @@ export default function Entry() {
     }
   };
 
-  const handleJoin = async () => {
+  const handleJoin = async (targetPin) => {
     if (!name.trim()) return setError('Entrez votre nom.');
-    if (!pin.trim()) return setError('Entrez le PIN de la session.');
+    if (!targetPin.trim()) return setError('Entrez le PIN de la session.');
     setError('');
     setBusy(true);
     try {
-      const cleanPin = pin.trim();
+      const cleanPin = targetPin.trim();
       if (!(await sessionExists(cleanPin))) {
         setError('Aucune session avec ce PIN.');
         return;
       }
-      const res = await joinSession(cleanPin, uid, name);
+      const res = await joinSession(cleanPin, name, uid);
       if (!res.ok) {
         setError(
           res.reason === 'already-started'
-            ? 'La partie a déjà commencé.'
+            ? 'La partie a commencé — rejoignez avec le nom exact que vous aviez.'
             : 'Session introuvable.',
         );
         return;
       }
-      navigate(`/fruit-interdit/${cleanPin}`);
+      go(cleanPin);
     } catch (e) {
       setError(e.message || 'Erreur lors de la connexion.');
     } finally {
@@ -66,9 +74,26 @@ export default function Entry() {
     <div className="screen entry">
       <Link to="/" className="back-link">← Jeux</Link>
       <header className="game-title">
-        <span className="game-title__emoji">🍓</span>
-        <h1>Fruit Interdit</h1>
+        <span className="game-title__emoji">🏆</span>
+        <h1>Combine</h1>
       </header>
+      <p className="muted">
+        Un mini-Combine à faire en vrai, entre amis&nbsp;: 8 défis, une roue de
+        points avant chaque défi, un vote pour choisir l'épreuve, puis on entre
+        les résultats. Votre nom est votre place&nbsp;: fermez l'onglet, revenez,
+        entrez le même nom et le même PIN, et vous retrouvez vos points.
+      </p>
+
+      {canResume && (
+        <button
+          type="button"
+          className="btn btn--primary"
+          disabled={busy}
+          onClick={() => handleJoin(lastPin)}
+        >
+          Reprendre la session {lastPin} · {lastName}
+        </button>
+      )}
 
       <label className="field">
         <span>Votre nom</span>
@@ -77,7 +102,7 @@ export default function Entry() {
           value={name}
           maxLength={20}
           placeholder="Ex : Alex"
-          onChange={(e) => rememberName(e.target.value)}
+          onChange={(e) => setNameRemembered(e.target.value)}
         />
       </label>
 
@@ -108,7 +133,7 @@ export default function Entry() {
           type="button"
           className="btn"
           disabled={busy}
-          onClick={handleJoin}
+          onClick={() => handleJoin(pin)}
         >
           Rejoindre
         </button>

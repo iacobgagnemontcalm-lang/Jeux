@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { usePlayer } from '../../auth.jsx';
 import { createSession, sessionExists, joinSession } from './session.js';
 
-const NAME_KEY = 'fi_player_name';
+const NAME_KEY = 'stw_player_name';
 
 export default function Entry() {
   const navigate = useNavigate();
@@ -26,7 +26,7 @@ export default function Entry() {
       const newPin = await createSession(uid);
       const res = await joinSession(newPin, uid, name);
       if (!res.ok) throw new Error('Impossible de rejoindre la session créée.');
-      navigate(`/fruit-interdit/${newPin}`);
+      navigate(`/spin-the-wheel/${newPin}`);
     } catch (e) {
       setError(e.message || 'Erreur lors de la création.');
     } finally {
@@ -54,7 +54,7 @@ export default function Entry() {
         );
         return;
       }
-      navigate(`/fruit-interdit/${cleanPin}`);
+      navigate(`/spin-the-wheel/${cleanPin}`);
     } catch (e) {
       setError(e.message || 'Erreur lors de la connexion.');
     } finally {
@@ -66,9 +66,16 @@ export default function Entry() {
     <div className="screen entry">
       <Link to="/" className="back-link">← Jeux</Link>
       <header className="game-title">
-        <span className="game-title__emoji">🍓</span>
-        <h1>Fruit Interdit</h1>
+        <span className="game-title__emoji">🏈</span>
+        <h1>Spin the Wheel</h1>
       </header>
+      <p className="muted">
+        Tournez la roue des 32 équipes NFL et bâtissez votre alignement
+        fantasy : QB, RB1, RB2, WR1, WR2, TE, FLEX, K et DEF. Deux modes,
+        difficulté réglable, bots à affronter — et une époque Historique où
+        une roue des années s'ajoute et où comptent les vrais points d'une
+        saison passée.
+      </p>
 
       <label className="field">
         <span>Votre nom</span>
